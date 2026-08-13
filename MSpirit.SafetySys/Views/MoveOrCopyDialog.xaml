@@ -1,0 +1,54 @@
+﻿<ui:FluentWindow x:Class="MS_SafetyManagementSystem.Views.MoveOrCopyDialog"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:controls="clr-namespace:MS_SafetyManagementSystem.Controls"
+                 Title="移动/复制卡片"
+                 Width="450" SizeToContent="Height"
+                 MinWidth="400" MinHeight="200"
+                 WindowStartupLocation="CenterOwner"
+                 ResizeMode="NoResize"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <controls:WindowTitleBar x:Name="TitleBarControl"
+                                 Grid.Row="0"
+                                 Icon="pack://application:,,,/Resources/FoolMoon.png"
+                                 Title="移动/复制卡片"
+                                 ShowMinimizeButton="False"
+                                 ShowMaximizeButton="False"/>
+
+        <StackPanel Grid.Row="1" Margin="20">
+            <TextBlock Text="目标日期（两位数字，例如 21）" Margin="0,0,0,5"/>
+            <TextBox x:Name="DayTextBox" Style="{StaticResource BaseTextBoxStyle}" MaxLength="2" TextChanged="DayTextBox_TextChanged"/>
+
+            <TextBlock Text="标签（可选，用于区分同一天的不同分组）" Margin="0,15,0,5"/>
+            <TextBox x:Name="TagTextBox" Style="{StaticResource BaseTextBoxStyle}" MaxLength="20"/>
+
+            <!-- 固定高度的提示区域 -->
+            <Grid Margin="0,15,0,0" Height="30">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="HintTextBlock" Grid.Column="0" 
+                           Foreground="Green" FontSize="10pt" TextWrapping="Wrap"
+                           VerticalAlignment="Center" MinHeight="30"/>
+                <TextBlock x:Name="ErrorTextBlock" Grid.Column="1" 
+                           Foreground="Red" FontSize="10pt" TextWrapping="Wrap"
+                           VerticalAlignment="Center" Visibility="Collapsed"/>
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                <Button Content="确定" Style="{StaticResource DialogButtonStyle}" Click="OkButton_Click" IsDefault="True"/>
+                <Button Content="取消" Style="{StaticResource DialogButtonStyle}" Click="CancelButton_Click" IsCancel="True" Margin="10,0,0,0"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</ui:FluentWindow>

@@ -1,0 +1,49 @@
+﻿<ui:FluentWindow x:Class="MS_SafetyManagementSystem.Views.RecordEditWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:controls="clr-namespace:MS_SafetyManagementSystem.Controls"
+                 Title="记录"
+                 Width="500" SizeToContent="Height"
+                 MinWidth="450" MinHeight="350"
+                 WindowStartupLocation="CenterOwner"
+                 ResizeMode="CanResize"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <controls:WindowTitleBar Grid.Row="0"
+                                 Icon="pack://application:,,,/Resources/FoolMoon.png"
+                                 Title="记录编辑"
+                                 ShowMinimizeButton="False"
+                                 ShowMaximizeButton="False"/>
+
+        <Grid Grid.Row="1" Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Text="标题：" Margin="0,0,0,5"/>
+            <TextBox x:Name="TitleTextBox" Grid.Row="1" Style="{StaticResource BaseTextBoxStyle}" Margin="0,0,0,15"/>
+
+            <TextBlock Text="内容：" Grid.Row="2" Margin="0,0,0,5"/>
+            <TextBox x:Name="ContentTextBox" Grid.Row="3" TextWrapping="Wrap" AcceptsReturn="True" 
+                     VerticalScrollBarVisibility="Auto" Style="{StaticResource BaseTextBoxStyle}"/>
+
+            <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+                <Button Content="确定" Style="{StaticResource DialogButtonStyle}" Click="OkButton_Click" IsDefault="True"/>
+                <Button Content="取消" Style="{StaticResource DialogButtonStyle}" Click="CancelButton_Click" IsCancel="True"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

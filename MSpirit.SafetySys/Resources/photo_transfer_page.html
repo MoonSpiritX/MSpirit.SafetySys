@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-store">
+<title>手机图片传输</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f6f8; color: #333; padding: 20px; }
+  .card { background: #fff; border-radius: 12px; padding: 18px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  .sub { color: #888; font-size: 13px; margin-bottom: 12px; }
+  .status { font-size: 14px; color: #17b3a3; font-weight: 600; }
+  .status.off { color: #e56a5a; }
+  .btn { display: block; width: 100%; padding: 14px; font-size: 16px; border: none; border-radius: 10px;
+         background: #17b3a3; color: #fff; cursor: pointer; margin-top: 12px; }
+  .btn:active { background: #0f8f82; }
+  .btn.secondary { background: #e8e8e8; color: #555; }
+  .btn:disabled { background: #c9c9c9; }
+  .count { font-size: 30px; font-weight: 700; color: #17b3a3; text-align: center; margin: 10px 0 2px; }
+  .count-label { text-align: center; color: #999; font-size: 13px; }
+  .list { margin-top: 10px; font-size: 13px; color: #777; max-height: 200px; overflow-y: auto; }
+  .list div { padding: 4px 0; border-bottom: 1px solid #f0f0f0; }
+  .tip { font-size: 12px; color: #aaa; line-height: 1.6; margin-top: 10px; }
+  .toast { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+           background: rgba(0,0,0,.72); color: #fff; padding: 14px 26px; border-radius: 10px;
+           font-size: 15px; font-weight: 600; opacity: 0; transition: opacity .25s;
+           pointer-events: none; z-index: 99; max-width: 80vw; text-align: center; }
+  .toast.show { opacity: 1; }
+  /* 终端服务指示灯（与人员/隐患录入页一致） */
+  .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-left: 8px; vertical-align: middle; }
+  .status-dot.online { background: #34a853; }
+  .status-dot.offline { background: #ccc; }
+  .server-status { font-size: 14px; font-weight: 400; color: #999; margin-left: 6px; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>手机图片传输<span class="server-status">[<span class="status-dot" id="serverDot"></span><span id="serverLabel">正在连接终端…</span>]</span></h1>
+  <div class="sub">上传的照片将按拍摄日期自动归档到电脑对应文件夹</div>
+  <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+  <button class="btn" id="pickBtn" disabled>选择照片（可多选）</button>
+  <button class="btn secondary" id="cameraBtn" disabled>拍照上传</button>
+  <div class="tip">提示：照片以原图上传，不做任何压缩处理；按拍摄日期归档，无拍摄日期时按手机创建日期归档。</div>
+</div>
+
+<div class="card">
+  <div class="count" id="count">0</div>
+  <div class="count-label">已上传张数</div>
+  <div class="list" id="list"></div>
+</div>
+
+<!-- 上传完成 Toast（传图极快，给用户明确的完成反馈） -->
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var token = params.get('token') || '';
+  var pickBtn = document.getElementById('pickBtn');
+  var cameraBtn = document.getElementById('cameraBtn');
+  var fileInput = document.getElementById('fileInput');
+  var countEl = document.getElementById('count');
+  var listEl = document.getElementById('list');
+  var serverDot = document.getElementById('serverDot');
+  var serverLabel = document.getElementById('serverLabel');
+  var toastEl = document.getElementById('toast');
+  var success = 0, toastTimer = null;
+
+  // Toast 提示（与隐患录入页同模式）：默认 2 秒自动消失；isError 时红底警示
+  function showToast(msg, duration, isError) {
+    duration = duration || 2000;
+    toastEl.textContent = msg;
+    toastEl.style.background = isError ? 'rgba(200,60,50,.85)' : 'rgba(0,0,0,.75)';
+    toastEl.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, duration);
+  }
+
+  // 服务心跳检测（照抄隐患/人员录入页）：每 3 秒 ping 一次，实时反映终端服务启用/停止状态
+  function setServerOnline() {
+    serverDot.className = 'status-dot online';
+    serverLabel.textContent = ' 终端服务已启用';
+    pickBtn.disabled = false;
+    cameraBtn.disabled = false;
+  }
+  function setServerOffline() {
+    serverDot.className = 'status-dot offline';
+    serverLabel.textContent = ' 终端服务已关闭';
+    pickBtn.disabled = true;
+    cameraBtn.disabled = true;
+  }
+  function checkServer() {
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function () { controller.abort(); }, 2000);
+    fetch('/ping?token=' + encodeURIComponent(token), { signal: controller.signal })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        clearTimeout(timeoutId);
+        if (d.ok) setServerOnline();
+        else setServerOffline();
+      })
+      .catch(function () {
+        clearTimeout(timeoutId);
+        setServerOffline();
+      });
+  }
+  checkServer();
+  setInterval(checkServer, 3000);
+
+  pickBtn.addEventListener('click', function () { fileInput.click(); });
+  cameraBtn.addEventListener('click', function () {
+    var input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*'; input.capture = 'environment';
+    input.onchange = function () { uploadFiles(input.files); };
+    input.click();
+  });
+
+  fileInput.addEventListener('change', function () { uploadFiles(fileInput.files); });
+
+  function uploadFiles(files) {
+    if (!files || files.length === 0) return;
+    var arr = Array.prototype.slice.call(files);
+    // 每批独立计数（多次选择互不干扰，避免 total 全局累加导致完成判断失效）
+    var batchTotal = arr.length;
+    var batchDone = 0;
+    var batchFail = 0;
+    // 逐张上传（原图直传，浏览器不压缩）
+    arr.forEach(function (file) {
+      // mtime = 手机上的文件创建（生成）时间；服务端无 EXIF 拍摄日期时用它归档
+      var url = '/upload?token=' + encodeURIComponent(token) + '&fileName=' + encodeURIComponent(file.name)
+              + '&mtime=' + encodeURIComponent(file.lastModified);
+      fetch(url, { method: 'POST', body: file })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          batchDone++;
+          if (d.ok) {
+            success++;
+            addRow('已保存 ' + d.fileName + '（' + d.date + '）');
+          } else {
+            batchFail++;
+            addRow('失败：' + (d.error || '未知错误'));
+          }
+        })
+        .catch(function () {
+          batchDone++;
+          batchFail++;
+          addRow('失败：' + file.name + '（网络错误）');
+        })
+        .then(function () {
+          updateCount();
+          checkBatchDone(batchTotal, batchDone, batchFail); // 本批全部处理完时弹完成提示
+        });
+    });
+  }
+
+  function checkBatchDone(batchTotal, batchDone, batchFail) {
+    if (batchDone < batchTotal) return;
+    if (batchFail === 0) showToast('上传完成：' + success + ' 张', 2000);
+    else showToast('完成：' + success + ' 成功，' + batchFail + ' 失败', 2500, true);
+  }
+
+  function addRow(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    listEl.insertBefore(div, listEl.firstChild);
+    if (listEl.children.length > 50) listEl.removeChild(listEl.lastChild);
+  }
+
+  function updateCount() { countEl.textContent = success; }
+})();
+</script>
+</body>
+</html>

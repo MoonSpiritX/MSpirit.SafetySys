@@ -1,0 +1,48 @@
+# ===== 构建产物 =====
+bin/
+obj/
+binDebugBuildCheck/
+publish/
+*.user
+*.suo
+*.Backup.tmp
+*.tmp
+
+# ===== 运行日志与临时文件 =====
+logs/
+**/logs/
+*.log
+nul
+
+# ===== IDE / 工具 =====
+.vs/
+.idea/
+.vscode/
+Thumbs.db
+desktop.ini
+
+# ===== AI 工作日志（含真实数据，勿提交；技能正本在 .workbuddy/skills/ 不随仓库分发，Skills/ 副本入库） =====
+.workbuddy/
+.codebuddy/
+
+# ===== 非正式 / 工具类（不进 git；正式 Skill 副本在 Skills/ 随仓库分发） =====
+其他文件/
+临时文档/
+
+# ===== 快捷方式与测试残留 =====
+*.lnk
+
+# ===== 测试结果 =====
+TestResults/
+
+# ===== 发布产物（更新包 / 商店包 / 存档包，体积大不入库） =====
+*.msupd
+*.msix
+*.msixupload
+*.msarch
+
+# ===== 数据库（防本地误运行产生；正式数据在 D:\MSpirit.SafetySys.Date） =====
+*.db
+*.db-wal
+*.db-shm
+*.db-journal

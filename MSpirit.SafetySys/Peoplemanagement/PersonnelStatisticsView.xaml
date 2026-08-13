@@ -1,0 +1,219 @@
+<UserControl x:Class="MS_SafetyManagementSystem.Peoplemanagement.PersonnelStatisticsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:MS_SafetyManagementSystem.Helpers"
+             xmlns:converters="clr-namespace:MS_SafetyManagementSystem.Converters"
+             xmlns:controls="clr-namespace:MS_SafetyManagementSystem.Controls">
+
+    <UserControl.Resources>
+        <converters:TextToBrushConverter x:Key="TextToBrushConverter"/>
+        <converters:ValidityDateToBrushConverter x:Key="ValidityDateToBrushConverter"/>
+        <!-- 公用居中文本样式 -->
+        <Style x:Key="CellTextStyle" TargetType="TextBlock">
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="10pt"/>
+        </Style>
+
+        <!-- 公用左对齐文本样式 -->
+        <Style x:Key="LeftCellTextStyle" TargetType="TextBlock">
+            <Setter Property="TextAlignment" Value="Left"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="10pt"/>
+        </Style>
+
+        <!-- 行样式 -->
+        <Style x:Key="StatsRowStyle" TargetType="DataGridRow">
+            <Setter Property="Background" Value="Transparent"/>
+            <Style.Triggers>
+                <Trigger Property="AlternationIndex" Value="0">
+                    <Setter Property="Background" Value="#CCFDFDFD"/>
+                </Trigger>
+                <Trigger Property="AlternationIndex" Value="1">
+                    <Setter Property="Background" Value="#CCF0F0F0"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E5F0FA"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#FF9EC4EA"/>
+                    <Setter Property="Foreground" Value="#1A1A1A"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 单元格样式 -->
+        <Style x:Key="StatsCellStyle" TargetType="DataGridCell">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="2,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="Foreground" Value="#000000"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 列头样式 -->
+        <Style x:Key="StatsColumnHeaderStyle" TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#19FFFFFF"/>
+            <Setter Property="BorderBrush" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="#1A1A1A"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="FontSize" Value="10pt"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="2,0"/>
+            <Setter Property="Cursor" Value="Arrow"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E5F0FA"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 主表格样式 -->
+        <Style x:Key="StatsDataGridStyle" TargetType="DataGrid">
+            <Setter Property="RowHeight" Value="26"/>
+            <Setter Property="ColumnHeaderHeight" Value="30"/>
+            <Setter Property="BorderBrush" Value="#DDDDDD"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#DDDDDD"/>
+            <Setter Property="VerticalGridLinesBrush" Value="Transparent"/>
+            <Setter Property="AlternationCount" Value="2"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="FontSize" Value="10pt"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="CanUserDeleteRows" Value="False"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+            <Setter Property="CanUserSortColumns" Value="False"/>
+            <Setter Property="RowStyle" Value="{StaticResource StatsRowStyle}"/>
+            <Setter Property="CellStyle" Value="{StaticResource StatsCellStyle}"/>
+            <Setter Property="ColumnHeaderStyle" Value="{StaticResource StatsColumnHeaderStyle}"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="30"/>
+        </Grid.RowDefinitions>
+
+        <!-- 按钮行 -->
+        <StackPanel Orientation="Horizontal" Margin="10,3,0,10" HorizontalAlignment="Left">
+            <Button x:Name="OneClickExportButton" Content="一键导出" Width="90" Height="28" FontSize="10pt"
+                    Style="{StaticResource BaseButtonStyle}" BorderBrush="White"
+                    ToolTip="快速导出当前列表内显示的人员数据"
+                    Click="OneClickExport_Click"/>
+
+            <TextBlock Width="15"/>
+
+            <!-- 单位范围（单位选择）：默认进入时的单位，切换后下方列表联动 -->
+            <TextBlock Text="单位范围：" FontSize="10pt" VerticalAlignment="Center" Margin="10,0,5,0"/>
+            <controls:DropdownSelector x:Name="ScopeSelector" Placeholder="项目所有单位" Width="150"/>
+
+            <TextBlock Width="15"/>
+
+            <TextBlock Text="人员状态：" FontSize="10pt" VerticalAlignment="Center" Margin="10,0,5,0"/>
+            <controls:DropdownSelector x:Name="StatusSelector" Placeholder="全部人员" Width="120"/>
+
+            <TextBlock Width="15"/>
+
+            <TextBlock Text="类别选择：" FontSize="10pt" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <controls:DropdownSelector x:Name="CategorySelector" Placeholder="全部人员" Width="120"/>
+        </StackPanel>
+
+        <!-- 数据表格 -->
+        <DataGrid Grid.Row="1" x:Name="StatsDataGrid"
+                  ItemsSource="{Binding Rows}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  SelectionUnit="FullRow"
+                  BorderBrush="#DDDDDD"
+                  BorderThickness="1"
+                  RowHeight="26"
+                  ColumnHeaderHeight="30"
+                  AlternationCount="2"
+                  Background="Transparent"
+                  Style="{StaticResource StatsDataGridStyle}"
+                  VerticalAlignment="Top"
+                  FontSize="10pt"
+                  Margin="0,0,20,0"
+                  FrozenColumnCount="2"
+                  helpers:DataGridScrollBehavior.EnableShiftHorizontalScroll="True"
+                  helpers:DataGridScrollBehavior.EnableInertialScroll="True"
+                  ScrollViewer.CanContentScroll="False"
+                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                  MouseDoubleClick="StatsDataGrid_MouseDoubleClick"
+                  PreviewKeyDown="StatsDataGrid_PreviewKeyDown">
+            <DataGrid.Columns>
+                <!-- 短内容列 → Auto 自适应 -->
+                <DataGridTextColumn Header="序号" Width="Auto" MinWidth="40" Binding="{Binding RowNumber}" ElementStyle="{StaticResource CellTextStyle}"/>
+                <DataGridTextColumn Header="姓名" Width="Auto" MinWidth="50" Binding="{Binding Title}" ElementStyle="{StaticResource CellTextStyle}"/>
+
+                <!-- 中等长度列 → * 均分，设 MinWidth 兜底 -->
+                <DataGridTextColumn Header="部门" Width="*" MinWidth="60" Binding="{Binding Department}" ElementStyle="{StaticResource CellTextStyle}"/>
+                <DataGridTextColumn Header="性别" Width="Auto" MinWidth="40" Binding="{Binding Gender}" ElementStyle="{StaticResource CellTextStyle}"/>
+                <DataGridTextColumn Header="岗位" Width="*" MinWidth="60" Binding="{Binding Position}" ElementStyle="{StaticResource CellTextStyle}"/>
+                <DataGridTextColumn Header="三类人员" Width="Auto" MinWidth="60" Binding="{Binding ThreeCategoryPersonnelDisplay}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource CellTextStyle}">
+                            <Setter Property="Foreground" Value="{Binding ThreeCategoryPersonnelDisplay, Converter={StaticResource TextToBrushConverter}, ConverterParameter='是|#4CAF50'}"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="特种作业" Width="Auto" MinWidth="60" Binding="{Binding SpecialOperationsPersonnelDisplay}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource CellTextStyle}">
+                            <Setter Property="Foreground" Value="{Binding SpecialOperationsPersonnelDisplay, Converter={StaticResource TextToBrushConverter}, ConverterParameter='是|#4CAF50'}"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="出生年月" Width="*" MinWidth="85" Binding="{Binding BirthDate}" ElementStyle="{StaticResource CellTextStyle}"/>
+                <DataGridTextColumn Header="年龄" Width="Auto" MinWidth="40" Binding="{Binding Age}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource CellTextStyle}">
+                            <Setter Property="Foreground" Value="{Binding Age, Converter={StaticResource TextToBrushConverter}, ConverterParameter='>=61|#E91E63'}"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="工号" Width="80" MinWidth="70" Binding="{Binding EmployeeID}" ElementStyle="{StaticResource CellTextStyle}"/>
+                <DataGridTextColumn Header="籍贯" Width="*" MinWidth="70" Binding="{Binding NativePlace}" ElementStyle="{StaticResource LeftCellTextStyle}"/>
+                <DataGridTextColumn Header="文化程度" Width="Auto" MinWidth="55" Binding="{Binding EducationLevel}" ElementStyle="{StaticResource CellTextStyle}"/>
+                <DataGridTextColumn Header="手机号" Width="*" MinWidth="70" Binding="{Binding PhoneDisplay}" ElementStyle="{StaticResource CellTextStyle}"/>
+                <DataGridTextColumn Header="入场时间" Width="*" MinWidth="85" Binding="{Binding EntryTime}" ElementStyle="{StaticResource CellTextStyle}"/>
+                <DataGridTextColumn Header="教育时间" Width="*" MinWidth="85" Binding="{Binding EduTime}" ElementStyle="{StaticResource CellTextStyle}"/>
+                <DataGridTextColumn Header="退场时间" Width="*" MinWidth="85" Binding="{Binding ExitTime}" ElementStyle="{StaticResource CellTextStyle}"/>
+                <DataGridTextColumn Header="身份证号" Width="*" MinWidth="85" Binding="{Binding IDCardDisplay}" ElementStyle="{StaticResource CellTextStyle}"/>
+                <DataGridTextColumn Header="身份证有效期" Width="*" MinWidth="180" Binding="{Binding IDCardValidPeriod}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource CellTextStyle}">
+                            <Setter Property="Foreground" Value="{Binding IDCardValidPeriod, Converter={StaticResource ValidityDateToBrushConverter}}"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="证书名称" Width="*" MinWidth="80" Binding="{Binding CertName}" ElementStyle="{StaticResource CellTextStyle}"/>
+                <DataGridTextColumn Header="证书编号" Width="*" MinWidth="100" Binding="{Binding CertNumber}" ElementStyle="{StaticResource CellTextStyle}"/>
+                <DataGridTextColumn Header="证书有效期" Width="*" MinWidth="180" Binding="{Binding CertValidPeriod}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource CellTextStyle}">
+                            <Setter Property="Foreground" Value="{Binding CertValidPeriod, Converter={StaticResource ValidityDateToBrushConverter}}"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="备注" Width="*" MinWidth="80" Binding="{Binding Remark}" ElementStyle="{StaticResource LeftCellTextStyle}"/>
+            </DataGrid.Columns>
+        </DataGrid>
+        <Border Grid.Row="2" Height="30" Background="Transparent">
+            <TextBlock Text="提示：滚轮-列表上下滚动；Shift+滚轮-左右滚动；或使用键盘方向键"
+                       FontSize="9pt" Foreground="#888888" 
+                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
+    </Grid>
+</UserControl>

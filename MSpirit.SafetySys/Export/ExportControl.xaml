@@ -1,0 +1,415 @@
+<UserControl x:Class="MS_SafetyManagementSystem.Export.ExportControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:controls="clr-namespace:MS_SafetyManagementSystem.Controls"
+             xmlns:export="clr-namespace:MS_SafetyManagementSystem.Export"
+             xmlns:viewModels="clr-namespace:MS_SafetyManagementSystem.ViewModels"
+             TextOptions.TextFormattingMode="Display"
+             AllowDrop="True"
+             PreviewKeyDown="Control_PreviewKeyDown">
+
+    <UserControl.Resources>
+        <export:BooleanToGrayBrushConverter x:Key="BooleanToGrayBrushConverter"/>
+        <viewModels:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+    </UserControl.Resources>
+
+    <Grid Background="Transparent"
+          PreviewMouseDown="Grid_PreviewMouseDown">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ========== 区域0：数据模式选择 ========== -->
+        <Border Grid.Row="0" Background="Transparent" Padding="20,10,20,5">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="数据模式选择：" VerticalAlignment="Center" FontSize="11pt" Margin="0,0,15,0"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <RadioButton GroupName="DataModeGroup"
+                                 Content="数据导出模式"
+                                 Margin="0,0,20,0"
+                                 FontSize="11pt" VerticalContentAlignment="Center"
+                                 IsChecked="{Binding IsExportMode}"/>
+                    <RadioButton GroupName="DataModeGroup"
+                                 Content="数据导入模式"
+                                 FontSize="11pt" VerticalContentAlignment="Center"
+                                 IsChecked="{Binding IsImportMode}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ========== 区域1：目标模版文件区 ========== -->
+        <Border Grid.Row="1" Background="Transparent" Padding="20,5,20,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="50"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" FontSize="11pt" Margin="0,0,15,0"
+                           Visibility="{Binding IsExportMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Run Text="目标模版文件："/></TextBlock>
+                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" FontSize="11pt" Margin="0,0,15,0"
+                           Visibility="{Binding IsImportMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Run Text="目标模版文件："/></TextBlock>
+                <!-- 导出模式：当前目标模版文件 -->
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CurrentFileName, StringFormat=将数据导出至当前目标模版文件：{0}}" 
+                           Foreground="Blue" FontSize="10pt"
+                           VerticalAlignment="Center"
+                           Visibility="{Binding IsExportMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Setter Property="ToolTip" Value="{Binding SelectedTemplatePath}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CurrentFileName}" Value="">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding SelectedTemplatePath}" Value="">
+                                    <Setter Property="ToolTip" Value="{x:Null}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <!-- 导入模式：当前源文件 -->
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CurrentFileName, StringFormat=将从当前源文件导入数据：{0}}" 
+                           Foreground="Blue" FontSize="10pt"
+                           VerticalAlignment="Center"
+                           Visibility="{Binding IsImportMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Setter Property="ToolTip" Value="{Binding SelectedTemplatePath}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CurrentFileName}" Value="">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding SelectedTemplatePath}" Value="">
+                                    <Setter Property="ToolTip" Value="{x:Null}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <Grid Grid.Row="1" Grid.Column="1" Margin="0,10,0,0">
+                    <TextBox x:Name="TemplatePathTextBox" 
+                             Text="{Binding SelectedTemplatePath, UpdateSourceTrigger=PropertyChanged}" 
+                             Height="60" VerticalContentAlignment="Center" FontSize="10pt"
+                             TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                             Background="Transparent" IsReadOnly="True" Cursor="Arrow"
+                             IsReadOnlyCaretVisible="False" Style="{StaticResource BaseTextBoxStyle}"
+                             Foreground="Black"
+                             AllowDrop="False"/>
+                    <TextBlock Text="可复制文件或文件路径地址后，点击 [ 粘贴文件 ] 按钮或按 Ctrl+V 添加目标模版文件&#x0a;或拖动文件至窗口内任意区域添加文件（仅支持 .docx 和 .xlsx 格式）"
+                               FontSize="10pt" Foreground="Gray" TextWrapping="Wrap" 
+                               VerticalAlignment="Center" IsHitTestVisible="False" 
+                               Padding="8,0" Margin="2,0,0,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Text, ElementName=TemplatePathTextBox}" Value="">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Text, ElementName=TemplatePathTextBox}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <!-- 透明覆盖层：作为文本框区域的拖放目标，绕开 TextBox 内部的拖放拦截 -->
+                    <Border Background="Transparent" AllowDrop="True"
+                            DragEnter="Control_DragEnter" DragOver="Control_DragOver" Drop="Control_Drop"/>
+                </Grid>
+                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,10,0,0">
+                    <Button Content="选择文件" Command="{Binding OpenFileCommand}" Width="80" Height="30" Margin="0,0,20,0" FontSize="11pt" Style="{StaticResource BaseButtonStyle}" BorderBrush="White"/>
+                    <Button Content="粘贴文件" Command="{Binding PasteFileCommand}" Width="80" Height="30" Margin="0,0,20,0" FontSize="11pt" Style="{StaticResource BaseButtonStyle}" BorderBrush="White"/>
+                    <Button Content="移出文件" Command="{Binding RemoveFileCommand}" Width="80" Height="30" Margin="0,0,20,0" FontSize="11pt" Style="{StaticResource BaseButtonStyle}" BorderBrush="White"/>
+
+                    <!-- Excel 工作表序号设置（仅当选定 Excel 文件时显示） -->
+                    <StackPanel Orientation="Horizontal" Visibility="{Binding IsExcelFile, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Text="工作表序号：" VerticalAlignment="Center" Margin="10,0,8,0" FontSize="11pt"/>
+                        <TextBox x:Name="ExcelSheetIndexTextBox" 
+                                 Text="{Binding ExcelSheetIndex, UpdateSourceTrigger=PropertyChanged}" 
+                                 Width="50" Height="25" 
+                                 VerticalContentAlignment="Center" 
+                                 TextAlignment="Center"
+                                 Background="Transparent"
+                                 FontSize="10pt" 
+                                 Style="{StaticResource BaseTextBoxStyle}"
+                                 PreviewTextInput="NumberTextBox_PreviewTextInput"/>
+                        <TextBlock Text="（仅支持数字，表示 Excel 内的工作表标签顺序）" VerticalAlignment="Center" Margin="0,0,0,0" FontSize="10pt" Foreground="Gray"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ========== 区域2：数据范围选择区 ========== -->
+        <Border Grid.Row="2" Background="Transparent" Padding="20,5,20,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="数据范围选择：" VerticalAlignment="Center" FontSize="11pt" Margin="0,0,15,0"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CurrentRangeDescription}" 
+                           VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Setter Property="Foreground" Value="Blue"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CurrentRangeDescription}" Value="">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <!-- 第二行：月度及单日数据导出（导出模式）/ 导入到指定日期分组（导入模式） -->
+                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,8,0,8">
+                    <!-- 导出模式标签 -->
+                    <CheckBox IsChecked="{Binding IsMonthlyRangeSelected}" VerticalAlignment="Center" 
+                              Margin="0,0,10,0" FontSize="11pt"
+                              Visibility="{Binding IsExportMode, Converter={StaticResource BooleanToVisibilityConverter}}"
+                              Content="月度及单日数据导出：" />
+                    <!-- 导入模式标签 -->
+                    <CheckBox IsChecked="{Binding IsMonthlyRangeSelected}" VerticalAlignment="Center" 
+                              Margin="0,0,10,0" FontSize="11pt"
+                              Visibility="{Binding IsImportMode, Converter={StaticResource BooleanToVisibilityConverter}}"
+                              Content="导入到指定日期分组：" />
+
+                    <!-- 年月下拉框 -->
+                    <Border Height="35" Width="170" BorderBrush="#CCFFFFFF" BorderThickness="1" CornerRadius="6"
+        Background="Transparent" Cursor="Hand" x:Name="YearMonthBorder2" 
+        PreviewMouseLeftButtonDown="YearMonthBorder2_PreviewMouseLeftButtonDown" Margin="0,0,10,0"
+        IsHitTestVisible="{Binding IsMonthlyRangeInteractive}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="YearMonthTextBox2" Grid.Column="0" FontSize="11pt" 
+                                     Text="{Binding SelectedYearMonthText, Mode=OneWay, FallbackValue='请选择年月'}"
+                                     BorderThickness="0" Background="Transparent" 
+                                     VerticalContentAlignment="Center" Padding="0,0"
+                                     IsReadOnly="True" Cursor="Hand"
+                                     Focusable="False"
+                                     Foreground="{Binding IsMonthlyRangeInteractive, Converter={StaticResource BooleanToGrayBrushConverter}}"
+                                     Style="{StaticResource BaseTextBoxStyle}"/>
+                            <controls:ArrowToggleButton x:Name="YearMonthToggleButton2" Grid.Column="1"
+                                                        Direction="Down"
+                                                        VerticalAlignment="Center" Margin="0,0,8,0"
+                                                        Focusable="False" IsHitTestVisible="False"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- 日期下拉框 -->
+                    <Border Height="35" Width="170" BorderBrush="#CCFFFFFF" BorderThickness="1" CornerRadius="6"
+        Background="Transparent" Cursor="Hand" x:Name="DateGroupBorder" 
+        PreviewMouseLeftButtonDown="DateGroupBorder_PreviewMouseLeftButtonDown" Margin="0,0,10,0"
+        IsHitTestVisible="{Binding IsDateGroupInteractive}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="DateGroupTextBox" Grid.Column="0" FontSize="11pt" 
+                                     Text="{Binding SelectedDateGroupText, Mode=OneWay, FallbackValue='请选择日期'}"
+                                     BorderThickness="0" Background="Transparent" 
+                                     VerticalContentAlignment="Center" Padding="0,0"
+                                     IsReadOnly="True" Cursor="Hand"
+                                     Focusable="False"
+                                     Foreground="{Binding IsDateGroupInteractive, Converter={StaticResource BooleanToGrayBrushConverter}}"
+                                     Style="{StaticResource BaseTextBoxStyle}"/>
+                            <controls:ArrowToggleButton x:Name="DateGroupToggleButton" Grid.Column="1"
+                                                        Direction="Down"
+                                                        VerticalAlignment="Center" Margin="0,0,8,0"
+                                                        Focusable="False" IsHitTestVisible="False"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- 清空按钮（清空年月和日期） -->
+                    <Button Content="清空" Width="60" Height="35" Margin="0,0,0,0" 
+                            FontSize="11pt" Style="{StaticResource BaseButtonStyle}" BorderBrush="White"
+                            Command="{Binding ClearYearMonthCommand}"/>
+                </StackPanel>
+
+                <!-- 第三行：导出模式 → 自定义时间范围导出 / 导入模式 → 按文件中日期自动分配 -->
+                <!-- 导出模式：自定义时间范围 -->
+                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Height="40"
+                            Visibility="{Binding IsExportMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <CheckBox IsChecked="{Binding IsCustomRangeSelected}" VerticalAlignment="Center" 
+                                 Margin="0,0,10,0" FontSize="11pt" Content="自定义时间范围导出：" />
+
+                    <!-- 起始日期下拉框 -->
+                    <Border Height="35" Width="170" BorderBrush="#CCFFFFFF" BorderThickness="1" CornerRadius="6"
+                            Background="Transparent" Cursor="Hand" x:Name="StartDateBorder" 
+                            PreviewMouseLeftButtonDown="StartDateBorder_PreviewMouseLeftButtonDown" Margin="0,0,10,0"
+                            IsHitTestVisible="{Binding IsCustomRangeInteractive}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="StartDateTextBox" Grid.Column="0" FontSize="11pt" 
+                                     Text="{Binding StartDateDisplay, Mode=OneWay, FallbackValue='起始日期'}"
+                                     BorderThickness="0" Background="Transparent" 
+                                     VerticalContentAlignment="Center" Padding="0,0"
+                                     IsReadOnly="True" Cursor="Hand" 
+                                     ToolTip="{Binding StartDateToolTip}"
+                                     Focusable="False"
+                                     Foreground="{Binding IsCustomRangeInteractive, Converter={StaticResource BooleanToGrayBrushConverter}}"
+                                     Style="{StaticResource BaseTextBoxStyle}"/>
+                            <controls:ArrowToggleButton x:Name="StartDateToggleButton" Grid.Column="1"
+                                                        Direction="Down"
+                                                        VerticalAlignment="Center" Margin="0,0,8,0"
+                                                        Focusable="False" IsHitTestVisible="False"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- 结束日期下拉框 -->
+                    <Border Height="35" Width="170" BorderBrush="#CCFFFFFF" BorderThickness="1" CornerRadius="6"
+                            Background="Transparent" Cursor="Hand" x:Name="EndDateBorder" 
+                            PreviewMouseLeftButtonDown="EndDateBorder_PreviewMouseLeftButtonDown" Margin="0,0,10,0"
+                            IsHitTestVisible="{Binding IsCustomRangeInteractive}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="EndDateTextBox" Grid.Column="0" FontSize="11pt" 
+                                     Text="{Binding EndDateDisplay, Mode=OneWay, FallbackValue='结束日期'}"
+                                     BorderThickness="0" Background="Transparent" 
+                                     VerticalContentAlignment="Center" Padding="0,0"
+                                     IsReadOnly="True" Cursor="Hand" 
+                                     ToolTip="{Binding EndDateToolTip}"
+                                     Focusable="False"
+                                     Foreground="{Binding IsCustomRangeInteractive, Converter={StaticResource BooleanToGrayBrushConverter}}"
+                                     Style="{StaticResource BaseTextBoxStyle}"/>
+                            <controls:ArrowToggleButton x:Name="EndDateToggleButton" Grid.Column="1"
+                                                        Direction="Down"
+                                                        VerticalAlignment="Center" Margin="0,0,8,0"
+                                                        Focusable="False" IsHitTestVisible="False"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- 清空按钮 -->
+                    <Button Content="清空" Width="60" Height="35" 
+                            FontSize="11pt" Style="{StaticResource BaseButtonStyle}" BorderBrush="White"
+                            Command="{Binding ClearCustomRangeCommand}"/>
+                </StackPanel>
+
+                <!-- 导入模式：按文件中日期自动分配 -->
+                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Height="40"
+                            Visibility="{Binding IsImportMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <CheckBox IsChecked="{Binding IsCustomRangeSelected}" VerticalAlignment="Center" 
+                              Margin="0,0,10,0" FontSize="11pt" Content="按文件中日期自动分配" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ========== 区域3：执行模式选择区 ========== -->
+        <Border Grid.Row="3" Background="Transparent" Padding="20,5,20,10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>  
+
+                <!-- 第一行：标签和按钮 -->
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="执行模式选择：" VerticalAlignment="Center" FontSize="11pt" Margin="0,0,15,0"/>
+                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal">
+                    <CheckBox Content="完整模式"
+                              Margin="0,0,15,0"
+                              FontSize="11pt" VerticalContentAlignment="Center"
+                              IsChecked="{Binding IsFullMode}"/>
+                    <CheckBox Content="文本模式"
+                              Margin="0,0,15,0"
+                              FontSize="11pt" VerticalContentAlignment="Center"
+                              IsChecked="{Binding IsNoImageMode}"/>
+                    <CheckBox Content="图片模式"
+                              Margin="0,0,15,0"
+                              FontSize="11pt" VerticalContentAlignment="Center"
+                              IsChecked="{Binding IsPlaceholderMode}"/>
+                </StackPanel>
+
+                <!-- 第二行：第一列留空，第二列放置提示文本 -->
+                <TextBlock Grid.Row="1" Grid.Column="1" 
+                           TextWrapping="Wrap" 
+                           Foreground="Black" 
+                           FontSize="10pt" 
+                           Margin="0,10,10,0"
+                           LineHeight="25"
+                           LineStackingStrategy="BlockLineHeight"
+                           VerticalAlignment="Top">
+                <Run Text="使用提示："/><LineBreak/>
+                <Run Text="       1、本程序数据导出和导入采用智能模式，可匹配不同格式模版。程序将根据文件内的表格格式自动对数据进行匹配。"/><LineBreak/>
+                <Run Text="       2、使用时需要选定导出数据的目标文件，或导入数据的源文件。程序将根据页面配置进行导出或导入数据。"/><LineBreak/>
+                <Run Text="       3、数据导出文件采用目标文件相同格式，与目标文件同目录。"/><LineBreak/>
+                <Run Text="       4、数据导入时可采用程序内指定导入日期或根据源文件内日期进行自动分配。"/><LineBreak/>
+                <Run Text="       5、如果导出/导出无效或格式错乱，说明使用的目标/源文件在排版方面存在不标准不规范以及隐藏格式杂乱的情况。"/><LineBreak/>
+                <Run Text="       6、快速创建相同格式的标准表格方式请点击主页面菜单栏 “设置-使用提示”。"/>
+                </TextBlock>
+                <!-- 第三行：进度条和状态文本 -->
+                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Vertical" Margin="0,10,10,0">
+                    <ProgressBar x:Name="ExportProgressBar" 
+                                 Height="16" 
+                                 IsIndeterminate="True" 
+                                 Visibility="{Binding IsExporting, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                 Margin="0,0,0,5"/>
+                    <TextBlock x:Name="ExportStatusText" 
+                               Text="正在导出，请稍候..." 
+                               Foreground="Blue" 
+                               FontSize="10pt" 
+                               Visibility="{Binding IsExporting, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 预留内容区域 -->
+        <Grid Grid.Row="4" Background="Transparent"/>
+
+        <!-- ========== 底部操作栏：主/次操作按钮 ========== -->
+        <Border Grid.Row="5" Background="Transparent" Padding="20,12,20,14">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="{Binding StartActionText}"
+                        Margin="0,0,12,0"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Command="{Binding StartExportCommand}"
+                        IsEnabled="{Binding IsExporting, Converter={StaticResource InverseBooleanConverter}}"/>
+                <Button Content="退出页面"
+                        Width="80" Height="30"
+                        Style="{StaticResource BaseButtonStyle}" BorderBrush="White"
+                        Click="ExitButton_Click"
+                        IsEnabled="{Binding IsExporting, Converter={StaticResource InverseBooleanConverter}}"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

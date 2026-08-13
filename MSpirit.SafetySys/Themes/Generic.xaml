@@ -1,0 +1,48 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:MS_SafetyManagementSystem.Controls">
+
+    <!-- =====================================================================
+         程序集默认主题字典（WPF CustomControl 约定路径，勿移动/改名）。
+         AssemblyInfo.cs 的 ThemeInfo 特性将本文件注册为控件默认样式来源。
+         控件类与默认样式的关联方式：类中 DefaultStyleKeyProperty.OverrideMetadata
+         指定类型，本文件以同 TargetType 的隐式样式提供模板。
+         当前服务控件：
+           - ArrowToggleButton（类文件：Controls/Generic.ArrowToggleButton.cs）
+         ===================================================================== -->
+    <!-- ArrowToggleButton 默认样式：手绘 V 形箭头 + 旋转动画 -->
+    <Style TargetType="controls:ArrowToggleButton">
+        <Setter Property="Width" Value="24"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Stroke" Value="#666666"/>
+        <Setter Property="StrokeThickness" Value="1"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="controls:ArrowToggleButton">
+                    <Grid Background="{TemplateBinding Background}">
+                        <Path x:Name="Arrow"
+                              Data="M 1.5,3 L 6,8 L 10.5,3"
+                              Stroke="{TemplateBinding Stroke}"
+                              StrokeThickness="{TemplateBinding StrokeThickness}"
+                              StrokeLineJoin="Round"
+                              StrokeEndLineCap="Round"
+                              Fill="Transparent"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Stretch="None"
+                              RenderTransformOrigin="0.5,0.5">
+                            <Path.RenderTransform>
+                                <RotateTransform Angle="0"/>
+                            </Path.RenderTransform>
+                        </Path>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

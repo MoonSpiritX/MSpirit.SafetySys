@@ -1,0 +1,154 @@
+<ui:FluentWindow x:Class="MS_SafetyManagementSystem.Controls.HazardLanEntryWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:controls="clr-namespace:MS_SafetyManagementSystem.Controls"
+                 Title="隐患手机录入" Height="630" Width="400"
+                 WindowStartupLocation="CenterOwner" 
+                 ResizeMode="NoResize"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round">
+    <Window.Resources>
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="#1a73e8" CornerRadius="8" Padding="12,0">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#1557b0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#0f3d7a"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bg" Property="Background" Value="#ccc"/>
+                                <Setter Property="Foreground" Value="#999"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="DangerButtonStyle" TargetType="Button">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="#EA4335" CornerRadius="8" Padding="12,0">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#c5221f"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#a50e0e"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bg" Property="Background" Value="#ccc"/>
+                                <Setter Property="Foreground" Value="#999"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid Background="Transparent" MouseLeftButtonDown="DragMoveWindow">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <controls:WindowTitleBar Grid.Row="0"
+                                 Title="隐患手机录入"
+                                 TitleFontSize="18"
+                                 TitleBarHeight="50"
+                                 ShowIcon="False"
+                                 ShowMinimizeButton="True"
+                                 ShowMaximizeButton="False"/>
+
+        <Border Grid.Row="1" Padding="20">
+            <Grid MouseLeftButtonDown="DragMoveWindow">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Margin="0,-12,0,12">
+                    <TextBlock x:Name="GroupText" FontSize="11pt" Foreground="#888780"/>
+                </StackPanel>
+
+                <Border Grid.Row="1" Background="#F1EFE8" CornerRadius="8" Padding="12" Margin="0,0,0,16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Ellipse x:Name="StatusIndicator" Grid.Column="0" Width="12" Height="12" Fill="#CCC" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="StatusText" Grid.Column="1" Text="服务未启动" FontSize="13" VerticalAlignment="Center" Foreground="#5F5E5A"/>
+                        <TextBlock x:Name="PortText" Grid.Column="2" FontSize="12" Foreground="#888780" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="2" Background="White" CornerRadius="12" BorderBrush="#E0E0E0" BorderThickness="1" Padding="16" Margin="0,0,0,16">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="手机扫码开始录入隐患" FontSize="14" FontWeight="Medium" Foreground="#2C2C2A" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                        <Image x:Name="QRCodeImage" Grid.Row="1" Width="240" Height="240" HorizontalAlignment="Center"
+                               Visibility="Collapsed" Stretch="Uniform"/>
+                        <TextBlock x:Name="QRPlaceholder" Grid.Row="1" Text="启动服务后生成二维码" 
+                                   Width="240" Height="240" 
+                                   FontSize="13" Foreground="#B4B2A9" 
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   TextAlignment="Center" TextWrapping="Wrap"/>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="3" Background="#FAEEDA" CornerRadius="8" Padding="12" Margin="0,0,0,6"
+                        Height="52" VerticalAlignment="Top">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="已录入：" FontSize="14" Foreground="#BA7517" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="CountText" Text="0" FontSize="24" FontWeight="SemiBold" Foreground="#BA7517" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                        <TextBlock Text=" 条" FontSize="14" Foreground="#BA7517" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
+                    <Button x:Name="StartButton" Content="▶ 启动服务" Width="140" Height="36"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Margin="0,0,12,0"
+                            Click="StartButton_Click"/>
+                    <Button x:Name="StopButton" Content="⏹ 停止服务" Width="140" Height="36"
+                            Style="{StaticResource DangerButtonStyle}"
+                            IsEnabled="False"
+                            Click="StopButton_Click"/>
+                </StackPanel>
+
+                <TextBlock Grid.Row="5" Text="扫码设备需与电脑连接至同一网络（仅限同一局域网设备访问）"
+                           FontSize="10pt" Foreground="#34A853" HorizontalAlignment="Center"
+                           TextWrapping="Wrap" TextAlignment="Center"
+                           Margin="0,4,0,0"/>
+            </Grid>
+        </Border>
+    </Grid>
+</ui:FluentWindow>

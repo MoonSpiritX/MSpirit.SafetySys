@@ -1,0 +1,177 @@
+<UserControl x:Class="MS_SafetyManagementSystem.Controls.MenuBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sysc="clr-namespace:System.Windows.Controls;assembly=PresentationFramework">
+
+    <UserControl.Resources>
+        <LinearGradientBrush x:Key="FauxMicaBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#80F2F4F7" Offset="0.0"/>
+            <GradientStop Color="#80EAEDF2" Offset="0.5"/>
+            <GradientStop Color="#80F0F3F6" Offset="1.0"/>
+        </LinearGradientBrush>
+
+        <!-- 子菜单项统一样式（放在 UserControl.Resources 以便代码中 FindResource 能找到） -->
+        <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:Key="SubMenuItemStyle">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Height" Value="33"/>
+            <Setter Property="Padding" Value="10,0,2,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="Border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="Icon"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="Shortcut"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter x:Name="Icon" Grid.Column="0" ContentSource="Icon" Margin="4,0,6,0" VerticalAlignment="Center"/>
+                                <ContentPresenter x:Name="HeaderHost" Grid.Column="1" ContentSource="Header" RecognizesAccessKey="True" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0"/>
+                                <TextBlock x:Name="InputGestureText" Grid.Column="2" Text="{TemplateBinding InputGestureText}" Margin="16,0,4,0" VerticalAlignment="Center" Foreground="Gray"/>
+                                <Popup x:Name="Popup" Placement="Right" HorizontalOffset="10" IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+                                    <Border BorderBrush="#E0E0E0" BorderThickness="1" Background="#E5FFFFFF" CornerRadius="4" Padding="4" Effect="{StaticResource MenuShadow}">
+                                        <ItemsPresenter x:Name="ItemsHost" />
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#E5F3FF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Background="{StaticResource FauxMicaBrush}"
+          PreviewMouseLeftButtonDown="MenuBar_MouseLeftButtonDown"
+          PreviewMouseMove="MenuBar_MouseMove">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <Menu x:Name="MainMenuBar" Grid.Column="0" Background="Transparent">
+        <Menu.ItemContainerStyle>
+            <Style TargetType="MenuItem">
+                <Setter Property="Height" Value="45"/>
+                <Setter Property="Padding" Value="10,4"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+            </Style>
+        </Menu.ItemContainerStyle>
+        <MenuItem x:Name="ProjectMenu">
+            <MenuItem.Header>
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="pack://application:,,,/Resources/projects.png" Width="16" Height="16" Margin="0,0,6,0"/>
+                    <sysc:TextBlock Text="项目列表"/>
+                </StackPanel>
+            </MenuItem.Header>
+            <MenuItem Header="新建项目" Style="{StaticResource SubMenuItemStyle}" Click="OnNewProject"/>
+            <MenuItem Header="项目及存档管理" Style="{StaticResource SubMenuItemStyle}" Click="OnManageProject"/>
+        </MenuItem>
+
+        <MenuItem>
+            <MenuItem.Header>
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="{StaticResource ModuleIcon}" Width="16" Height="16" Margin="0,0,6,0"/>
+                    <sysc:TextBlock Text="模块选择"/>
+                </StackPanel>
+            </MenuItem.Header>
+            <MenuItem Header="隐患管理模块" x:Name="SafetyModuleItem" Style="{StaticResource SubMenuItemStyle}" Click="OnModuleSafety">
+                <MenuItem.Icon>
+                    <Image x:Name="SafetyImage" Source="{StaticResource CheckedIcon}" Width="16" Height="16"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="人员管理模块" x:Name="PersonnelModuleItem" Style="{StaticResource SubMenuItemStyle}" Click="OnModulePersonnel">
+                <MenuItem.Icon>
+                    <Image x:Name="PersonnelImage" Source="{StaticResource UncheckedIcon}" Width="16" Height="16"/>
+                </MenuItem.Icon>
+            </MenuItem>
+        </MenuItem>
+
+        <MenuItem>
+            <MenuItem.Header>
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="pack://application:,,,/Resources/settings.png" Width="16" Height="16" Margin="0,0,6,0"/>
+                    <sysc:TextBlock Text="设置"/>
+                </StackPanel>
+            </MenuItem.Header>
+            <MenuItem Header="图片查看器设置" Style="{StaticResource SubMenuItemStyle}" Margin="0,-1,0,1">
+                <MenuItem x:Name="InternalViewerFullScreenItem" Style="{StaticResource SubMenuItemStyle}" Click="OnInternalViewerFullScreen">
+                    <MenuItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <Image x:Name="InternalViewerFullScreenIcon" Source="{StaticResource CheckedIcon}" Width="16" Height="16" Margin="0,0,6,0"/>
+                            <sysc:TextBlock Text="内置 · 全屏模式"/>
+                        </StackPanel>
+                    </MenuItem.Header>
+                </MenuItem>
+                <MenuItem x:Name="InternalViewerNormalItem" Style="{StaticResource SubMenuItemStyle}" Click="OnInternalViewerNormal">
+                    <MenuItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <Image x:Name="InternalViewerNormalIcon" Source="{StaticResource UncheckedIcon}" Width="16" Height="16" Margin="0,0,6,0"/>
+                            <sysc:TextBlock Text="内置 · 普通模式"/>
+                        </StackPanel>
+                    </MenuItem.Header>
+                </MenuItem>
+                <MenuItem x:Name="SystemViewerMenuItem" Style="{StaticResource SubMenuItemStyle}" Click="OnSystemViewer">
+                    <MenuItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <Image x:Name="SystemViewerIcon" Source="{StaticResource UncheckedIcon}" Width="16" Height="16" Margin="0,0,6,0"/>
+                            <sysc:TextBlock Text="系统默认查看器"/>
+                        </StackPanel>
+                    </MenuItem.Header>
+                </MenuItem>
+            </MenuItem>
+            <MenuItem Header="常用隐患类型管理" Style="{StaticResource SubMenuItemStyle}"
+                      Click="OnManageCommonHazardTypes"/>
+            <MenuItem Header="常用链接管理" Style="{StaticResource SubMenuItemStyle}"
+                      Click="OnManageLinks"/>
+            <MenuItem Header="使用提示" Style="{StaticResource SubMenuItemStyle}"
+                      Click="OnUsageGuide"/>
+            <MenuItem Header="关于软件" Style="{StaticResource SubMenuItemStyle}"
+                      Click="OnAbout"/>
+            <MenuItem Header="关闭程序" Style="{StaticResource SubMenuItemStyle}"
+                      Click="OnCloseProgram"/>
+        </MenuItem>
+
+        <!-- 办公工具 -->
+        <MenuItem>
+            <MenuItem.Header>
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="pack://application:,,,/Resources/Documents.png" Width="16" Height="16" Margin="0,0,6,0"/>
+                    <sysc:TextBlock Text="办公工具"/>
+                </StackPanel>
+            </MenuItem.Header>
+            <MenuItem Header="图片处理" Style="{StaticResource SubMenuItemStyle}" Click="OnImageProcess"/>
+            <MenuItem Header="手机图片传输" Style="{StaticResource SubMenuItemStyle}" Click="OnPhotoTransfer"/>
+        </MenuItem>
+
+        <!-- 信息官网 -->
+        <MenuItem x:Name="GovernmentMenu" Header="信息官网"/>
+
+        <!-- 外部AI -->
+        <MenuItem x:Name="AIMenu" Header="外部AI"/>
+
+        <!-- 快捷网址 -->
+        <MenuItem x:Name="CustomMenu" Header="快捷网址"/>
+        </Menu>
+
+        <!-- 右侧：当前项目 / 模块上下文信息 -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,14,0">
+            <TextBlock Text="项目：" FontSize="12" Foreground="#666666" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding CurrentProjectName}" FontSize="12" FontWeight="SemiBold" Foreground="#1A1A1A"
+                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="220"
+                       ToolTip="{Binding CurrentProjectName}"/>
+            <Border Width="1" Height="14" Background="#CCCCCC" Margin="10,0" VerticalAlignment="Center"/>
+            <TextBlock Text="模块：" FontSize="12" Foreground="#666666" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding CurrentModuleName}" FontSize="12" FontWeight="SemiBold" Foreground="#1A1A1A"
+                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="140"
+                       ToolTip="{Binding CurrentModuleName}"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

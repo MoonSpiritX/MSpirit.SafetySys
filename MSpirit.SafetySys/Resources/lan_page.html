@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>人员录入</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:#f5f5f5; color:#333; overflow:hidden; height:100vh; display:flex; flex-direction:column; }
+.header { background:#fff; padding:12px 16px; border-bottom:1px solid #e0e0e0; flex-shrink:0; }
+.header h2 { font-size:18px; margin-bottom:4px; }
+.list-section { flex:1; overflow-y:auto; min-height:0; padding:8px 16px; }
+.list-header { display:flex; padding:8px 0; border-bottom:1px solid #eee; font-size:15px; color:#999; font-weight:500; }
+.list-row { display:flex; padding:10px 0; border-bottom:1px solid #f0f0f0; font-size:15px; align-items:center; min-height:40px; }
+.col-idx { width:10%; flex-shrink:0; text-align:center; }
+.col-name { width:30%; flex-shrink:0; text-align:center; }
+.col-gender { width:10%; flex-shrink:0; text-align:center; }
+.col-dept { width:30%; flex-shrink:0; font-size:15px; text-align:center; }
+.col-status { width:20%; flex-shrink:0; text-align:center; }
+.status-processing { color:#1a73e8; }
+.status-completed { color:#34a853; }
+.status-failed { color:#ea4335; }
+.empty-hint { text-align:center; color:#ccc; padding:40px 0; font-size:15px; }
+.photo-section { background:#fff; padding:12px 16px 100px; border-top:1px solid #e0e0e0; flex-shrink:0; }
+.photo-grid { display:flex; gap:10px; margin-bottom:10px; }
+.photo-box { flex:1; aspect-ratio:1.6; border:2px dashed #ccc; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; background:#fafafa; position:relative; overflow:hidden; transition:border-color .2s; }
+.photo-box:active { border-color:#1a73e8; }
+.photo-box .hint { font-size:15px; color:#999; text-align:center; line-height:1.4; pointer-events:none; }
+.photo-box img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; display:none; }
+.photo-box.has-photo { border-color:#1a73e8; border-style:solid; }
+.photo-box.has-photo .hint { display:none; }
+.photo-box.has-photo img { display:block; }
+.submit-btn { display:block; width:100%; padding:14px; border:none; border-radius:10px; font-size:16px; cursor:pointer; text-align:center; background:#1a73e8; color:#fff; font-weight:500; }
+.submit-btn:disabled { background:#ccc; cursor:not-allowed; }
+.submit-btn.loading { background:#f5a623; }
+.gallery-btn { display:block; width:100%; padding:10px; border:1px solid #1a73e8; border-radius:10px; font-size:15px; cursor:pointer; text-align:center; background:#fff; color:#1a73e8; margin:8px 0 12px 0; }
+.gallery-btn:active { background:#e8f0fe; }
+.status-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-left:8px; vertical-align:middle; }
+.status-dot.online { background:#34a853; }
+.status-dot.offline { background:#ccc; }
+.header-info-text { font-family:'Microsoft YaHei','黑体',sans-serif; font-size:15px; color:#888; }
+.dept-select { font-family:'Microsoft YaHei','黑体',sans-serif; font-size:15px; color:#888; background:transparent; border:1px solid #ddd; border-radius:4px; padding:2px 4px; width:50vw; }
+.file-input { display:none; }
+</style>
+</head>
+<body>
+
+<!-- 第1部分：顶栏 -->
+<div class="header">
+  <h2>人员信息录入<span id="serverStatusWrap" style="font-size:15px;font-weight:400;color:#999;margin-left:4px;vertical-align:middle;">[<span class="status-dot" id="serverDot"></span><span id="serverLabel">终端服务已启用</span>]</span></h2>
+  <div id="unitText" class="header-info-text">单位：--</div>
+  <div style="margin-top:2px;display:flex;align-items:center;">
+    <span class="header-info-text" style="flex-shrink:0;">部门：</span>
+    <select class="dept-select" id="deptSelect"></select>
+  </div>
+</div>
+
+<!-- 第2部分：列表 -->
+<div class="list-section" id="listSection">
+  <div class="list-header">
+    <span class="col-idx">序号</span>
+    <span class="col-name">姓名</span>
+    <span class="col-gender">性别</span>
+    <span class="col-dept">部门</span>
+    <span class="col-status">状态</span>
+  </div>
+  <div id="listBody">
+    <div class="empty-hint">暂无录入记录</div>
+  </div>
+</div>
+
+<!-- 第3+4部分：拍照区 + 提交按钮 -->
+<div class="photo-section">
+  <div class="photo-grid">
+    <div class="photo-box" id="boxFront" onclick="takePhoto('front')">
+      <div class="hint">点击拍摄<br>身份证正面</div>
+      <img id="previewFront">
+    </div>
+    <div class="photo-box" id="boxBack" onclick="takePhoto('back')">
+      <div class="hint">点击拍摄<br>身份证背面</div>
+      <img id="previewBack">
+    </div>
+  </div>
+  <button class="gallery-btn" onclick="document.getElementById('fileGallery').click()">从相册选择（单次最多2张图片）</button>
+  <button class="submit-btn" id="submitBtn" onclick="submitEntry()" disabled>请拍摄身份证照片</button>
+</div>
+
+<!-- 隐藏的 file input -->
+<input class="file-input" type="file" accept="image/*" capture="environment" id="fileFront">
+<input class="file-input" type="file" accept="image/*" capture="environment" id="fileBack">
+<input class="file-input" type="file" accept="image/*" multiple id="fileGallery">
+
+<script>
+// ==================== 状态 ====================
+var params = new URLSearchParams(location.search);
+var groupId = params.get('groupId') || '';
+var groupName = params.get('groupName') || '';
+var unitName = params.get('unitName') || '';
+var token = params.get('token') || '';
+
+// 初始化单位名称显示
+document.getElementById('unitText').textContent = '单位：' + (unitName || groupName || groupId);
+
+// ==================== 服务心跳检测 ====================
+var serverDot = document.getElementById('serverDot');
+var serverLabel = document.getElementById('serverLabel');
+var pingTimer = null;
+
+function setServerOnline() {
+  serverDot.className = 'status-dot online';
+  serverLabel.textContent = ' 终端服务已启用';
+}
+function setServerOffline() {
+  serverDot.className = 'status-dot offline';
+  serverLabel.textContent = ' 终端服务已关闭';
+}
+
+function checkServer() {
+  // 2 秒超时，避免 fetch 卡住
+  var controller = new AbortController();
+  pingTimer = setTimeout(function() { controller.abort(); }, 2000);
+  fetch('/ping?token=' + encodeURIComponent(token), { signal: controller.signal }).then(function(r) { return r.json(); }).then(function(data) {
+    clearTimeout(pingTimer);
+    setServerOnline();
+    // 检测部门信息并更新（用户可能在同一页面下切换了窗口）
+    if (data.groupName) {
+      groupName = data.groupName;
+      unitName = data.unitName || unitName;
+      document.getElementById('unitText').textContent = '单位：' + (unitName || groupName);
+    }
+  }).catch(function() {
+    clearTimeout(pingTimer);
+    setServerOffline();
+  });
+}
+checkServer();
+setInterval(checkServer, 3000);
+
+// ==================== 加载部门列表 ====================
+var deptSelect = document.getElementById('deptSelect');
+
+function loadDepartments() {
+  fetch('/departments?groupId=' + encodeURIComponent(groupId) + '&token=' + encodeURIComponent(token))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok && data.departments && data.departments.length > 0) {
+        deptSelect.innerHTML = '';
+        data.departments.forEach(function(d) {
+          var opt = document.createElement('option');
+          opt.value = d.id;
+          opt.textContent = d.name;
+          if (d.id === groupId) opt.selected = true;
+          deptSelect.appendChild(opt);
+        });
+      }
+    })
+    .catch(function() {});
+}
+loadDepartments();
+
+function getCurrentGroupId() {
+  return deptSelect.value || groupId;
+}
+
+var currentTempId = '';
+var frontFile = null;
+var backFile = null;
+var rowIndex = 0;
+var pendingRows = {}; // tempId -> {index, statusEl}
+
+// ==================== 拍照（input[type=file][capture]） ====================
+document.getElementById('fileFront').addEventListener('change', function(e) {
+  handleFileSelect(e, 'front');
+});
+document.getElementById('fileBack').addEventListener('change', function(e) {
+  handleFileSelect(e, 'back');
+});
+document.getElementById('fileGallery').addEventListener('change', function(e) {
+  var files = Array.from(e.target.files).slice(0, 2);
+  if (files.length >= 1) {
+    frontFile = files[0];
+    showPreview(files[0], 'previewFront', 'boxFront');
+  }
+  if (files.length >= 2) {
+    backFile = files[1];
+    showPreview(files[1], 'previewBack', 'boxBack');
+  }
+  updateSubmitButton();
+});
+
+function takePhoto(side) {
+  var input = document.getElementById(side === 'front' ? 'fileFront' : 'fileBack');
+  input.value = ''; // 允许重复选择同一张照片
+  input.click();
+}
+
+function handleFileSelect(e, side) {
+  var file = e.target.files[0];
+  if (!file) return;
+
+  if (side === 'front') {
+    frontFile = file;
+    showPreview(file, 'previewFront', 'boxFront');
+  } else {
+    backFile = file;
+    showPreview(file, 'previewBack', 'boxBack');
+  }
+  updateSubmitButton();
+}
+
+function showPreview(file, imgId, boxId) {
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var img = document.getElementById(imgId);
+    img.src = ev.target.result;
+    document.getElementById(boxId).classList.add('has-photo');
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateSubmitButton() {
+  var btn = document.getElementById('submitBtn');
+  if (frontFile || backFile) {
+    btn.disabled = false;
+    btn.textContent = '提交录入';
+  } else {
+    btn.disabled = true;
+    btn.textContent = '请拍摄身份证照片';
+  }
+}
+
+// ==================== 压缩上传 ====================
+function compressAndUpload(file, side) {
+  return new Promise(function(resolve) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var w = img.width, h = img.height;
+      var maxSide = 1200;
+      if (w > h && w > maxSide) { h *= maxSide / w; w = maxSide; }
+      else if (h > maxSide) { w *= maxSide / h; h = maxSide; }
+      canvas.width = Math.round(w);
+      canvas.height = Math.round(h);
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(function(blob) {
+        var url = '/upload?side=' + side + '&tempId=' + encodeURIComponent(currentTempId) + '&groupId=' + encodeURIComponent(getCurrentGroupId()) + '&token=' + encodeURIComponent(token);
+        fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'image/jpeg' },
+          body: blob
+        }).then(function(r) { return r.json(); }).then(function(data) {
+          resolve(data);
+        }).catch(function(err) {
+          resolve({ ok: false, error: err.message });
+        });
+      }, 'image/jpeg', 0.7);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// ==================== 提交 ====================
+function submitEntry() {
+  if (!frontFile && !backFile) return;
+
+  currentTempId = 'lan_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  rowIndex++;
+
+  // 在列表中添加一行（处理中）
+  var rowId = 'row_' + currentTempId;
+  var listBody = document.getElementById('listBody');
+  var emptyHint = listBody.querySelector('.empty-hint');
+  if (emptyHint) emptyHint.remove();
+
+  var row = document.createElement('div');
+  row.className = 'list-row';
+  row.id = rowId;
+  row.innerHTML =
+    '<span class="col-idx">' + rowIndex + '</span>' +
+    '<span class="col-name">--</span>' +
+    '<span class="col-gender">--</span>' +
+    '<span class="col-dept">--</span>' +
+    '<span class="col-status status-processing" id="status_' + currentTempId + '">处理中</span>';
+  listBody.appendChild(row);
+  listBody.parentElement.scrollTop = listBody.parentElement.scrollHeight;
+
+  pendingRows[currentTempId] = { index: rowIndex };
+
+  // 禁用按钮
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '提交中...';
+
+  // 上传正面
+  var uploads = [];
+  if (frontFile) uploads.push(compressAndUpload(frontFile, 'front'));
+
+  // 背面（如果有）
+  if (backFile) uploads.push(compressAndUpload(backFile, 'back'));
+
+  Promise.all(uploads).then(function() {
+    // 提交到后台处理
+    return fetch('/submit?token=' + encodeURIComponent(token), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tempId: currentTempId })
+    });
+  }).then(function(r) { return r.json(); }).then(function(data) {
+    if (!data.ok) {
+      setStatus(currentTempId, 'failed', data.error || '提交失败');
+      resetPhotoBoxes();
+      return;
+    }
+    // 启动轮询
+    pollStatus(currentTempId);
+    // 清空拍照框，准备下一人
+    resetPhotoBoxes();
+  }).catch(function(err) {
+    setStatus(currentTempId, 'failed', '网络错误');
+    resetPhotoBoxes();
+  });
+}
+
+// ==================== 轮询 ====================
+function pollStatus(tempId) {
+  var maxRetries = 30; // 最多等60秒
+  var retryCount = 0;
+
+  function poll() {
+    retryCount++;
+    fetch('/status?tempId=' + encodeURIComponent(tempId) + '&token=' + encodeURIComponent(token))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.status === 'completed') {
+          setStatus(tempId, 'completed', '录入成功', data.name, data.gender, data.groupName);
+        } else if (data.status === 'failed') {
+          setStatus(tempId, 'failed', '失败: ' + (data.error || ''));
+        } else if (data.status === 'processing') {
+          if (retryCount < maxRetries) {
+            setTimeout(poll, 2000);
+          } else {
+            setStatus(tempId, 'failed', '超时未完成');
+          }
+        }
+      })
+      .catch(function() {
+        if (retryCount < maxRetries) {
+          setTimeout(poll, 2000);
+        }
+      });
+  }
+  setTimeout(poll, 2000);
+}
+
+function setStatus(tempId, status, text, name, gender, groupName) {
+  var el = document.getElementById('status_' + tempId);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'col-status status-' + status;
+
+  var row = el.parentElement;
+
+  // 填充姓名
+  if (name) {
+    row.querySelector('.col-name').textContent = name;
+  }
+  // 填充性别
+  if (gender) {
+    row.querySelector('.col-gender').textContent = gender;
+  }
+  // 填充部门
+  if (groupName) {
+    row.querySelector('.col-dept').textContent = groupName;
+  }
+}
+
+// ==================== 重置拍照框 ====================
+function resetPhotoBoxes() {
+  frontFile = null;
+  backFile = null;
+  document.getElementById('previewFront').src = '';
+  document.getElementById('previewBack').src = '';
+  document.getElementById('boxFront').classList.remove('has-photo');
+  document.getElementById('boxBack').classList.remove('has-photo');
+  document.getElementById('fileFront').value = '';
+  document.getElementById('fileBack').value = '';
+  document.getElementById('fileGallery').value = '';
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('submitBtn').textContent = '请拍摄身份证照片';
+}
+</script>
+</body>
+</html>

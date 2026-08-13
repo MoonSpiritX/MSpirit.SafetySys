@@ -1,0 +1,61 @@
+﻿<ui:FluentWindow x:Class="MS_SafetyManagementSystem.Views.ExitConfirmWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:controls="clr-namespace:MS_SafetyManagementSystem.Controls"
+                 Title="关闭程序"
+                 Width="450" SizeToContent="Height"
+                 MinWidth="400" MinHeight="180"
+                 WindowStartupLocation="CenterOwner"
+                 ResizeMode="NoResize"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <controls:WindowTitleBar Grid.Row="0"
+                                 Icon="pack://application:,,,/Resources/FoolMoon.png"
+                                 Title="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}"
+                                 ShowMinimizeButton="False"
+                                 ShowMaximizeButton="False"/>
+
+        <Grid Grid.Row="1" Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Background="Transparent" Padding="0,10,0,10">
+                <TextBlock x:Name="MessageTextBlock"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           FontSize="11pt"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Stretch">
+                    请选择关闭方式：
+                    <LineBreak/>
+                    <Run FontWeight="Bold">最小化到托盘</Run>——程序转入后台运行，可从系统托盘图标恢复；
+                    <LineBreak/>
+                    <Run FontWeight="Bold">退出程序</Run>——保存当前数据后完全退出。
+                </TextBlock>
+            </Border>
+
+            <StackPanel Grid.Row="1"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        Margin="0,10,0,0">
+                <Button x:Name="MinimizeButton" Content="最小化到托盘"
+                        Style="{StaticResource BaseButtonStyle}"
+                        Width="110" Height="32" Margin="0,0,10,0" IsDefault="True"/>
+                <Button x:Name="ExitButton" Content="退出程序"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Width="110" Height="32"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

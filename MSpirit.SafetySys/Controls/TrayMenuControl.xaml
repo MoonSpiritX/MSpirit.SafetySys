@@ -1,0 +1,87 @@
+﻿<UserControl x:Class="MS_SafetyManagementSystem.Views.TrayMenuControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             MinWidth="50"
+             Width="Auto"
+             MinHeight="50"
+             Height="Auto">
+    <UserControl.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Margin" Value="0,2,0,2"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="12,0,12,0"/>
+            <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+            <Setter Property="FontSize" Value="11pt"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#E5F3FF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="8">
+        <Border Background="#3F000000"
+                CornerRadius="8"
+                Margin="0,0,0,0"
+                RenderTransformOrigin="0.5,0.5">
+            <Border.RenderTransform>
+                <TranslateTransform X="2" Y="2"/>
+            </Border.RenderTransform>
+            <Border.Effect>
+                <BlurEffect Radius="6" KernelType="Gaussian"/>
+            </Border.Effect>
+        </Border>
+
+        <Border x:Name="ContentBorder"
+                Background="#E5AAAAAA"
+                BorderBrush="Transparent"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="6,3,6,3">
+            <StackPanel>
+                <Button Content="显示主窗口" Click="OnShowWindowClick"/>
+                <Separator Margin="0,1,0,1"/>
+                <!-- 分组菜单（办公工具/信息官网/外部AI/快捷网址），由代码按 Groups 重建 -->
+                <StackPanel x:Name="GroupItemsPanel"/>
+                <Separator x:Name="GroupsSeparator" Margin="0,1,0,1" Visibility="Collapsed"/>
+                <Button Content="退出程序" Click="OnExitClick"/>
+            </StackPanel>
+        </Border>
+
+        <!-- 二级菜单 Popup：PlacementTarget 由代码在悬停一级分组项时设置（Placement=Right 贴右侧展开） -->
+        <Popup x:Name="SubMenuPopupElement"
+               Placement="Right"
+               AllowsTransparency="True"
+               StaysOpen="True"
+               PopupAnimation="Slide"
+               VerticalOffset="-4">
+            <Border Background="#E5AAAAAA"
+                    BorderBrush="Transparent"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="6,3,6,3">
+                <StackPanel x:Name="SubMenuItemsPanel" MinWidth="130"/>
+            </Border>
+        </Popup>
+    </Grid>
+</UserControl>

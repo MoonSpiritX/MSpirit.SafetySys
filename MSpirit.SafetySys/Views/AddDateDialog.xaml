@@ -1,0 +1,144 @@
+﻿<ui:FluentWindow x:Class="MS_SafetyManagementSystem.Views.AddDateDialog"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:controls="clr-namespace:MS_SafetyManagementSystem.Controls"
+                 xmlns:local="clr-namespace:MS_SafetyManagementSystem.ViewModels"
+                 Title="添加日期"
+                 Width="450" SizeToContent="Height"
+                 MinWidth="400" MinHeight="450"
+                 WindowStartupLocation="CenterOwner"
+                 ResizeMode="NoResize"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round">
+
+    <ui:FluentWindow.InputBindings>
+        <KeyBinding Key="Escape" Command="{Binding CancelCommand}"/>
+    </ui:FluentWindow.InputBindings>
+
+    <ui:FluentWindow.Resources>
+        <Style TargetType="TextBlock" x:Key="WeekdayHeaderStyle">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="4"/>
+        </Style>
+
+        <Style TargetType="Button" x:Key="DateButtonStyle">
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Background" Value="#33D3ECE9"/>
+            <Setter Property="BorderBrush" Value="#FF989898"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="0">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#E5F3FF"/>
+                                <Setter Property="BorderBrush" Value="#17c3b2"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="#CCF0F0F0"/>
+                                <Setter Property="BorderBrush" Value="#CCCCCCCC"/>
+                                <Setter Property="Foreground" Value="#999"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="Button" x:Key="ExistsDateButtonStyle" BasedOn="{StaticResource DateButtonStyle}">
+            <Setter Property="Background" Value="#CCD4F1F9"/>
+            <Setter Property="BorderBrush" Value="#17c3b2"/>
+            <Setter Property="ToolTip" Value="已有记录，点击将创建副本"/>
+        </Style>
+
+        <local:ExistsButtonStyleConverter x:Key="ExistsButtonStyleConverter">
+            <local:ExistsButtonStyleConverter.ExistsStyle>
+                <StaticResource ResourceKey="ExistsDateButtonStyle"/>
+            </local:ExistsButtonStyleConverter.ExistsStyle>
+            <local:ExistsButtonStyleConverter.NormalStyle>
+                <StaticResource ResourceKey="DateButtonStyle"/>
+            </local:ExistsButtonStyleConverter.NormalStyle>
+        </local:ExistsButtonStyleConverter>
+    </ui:FluentWindow.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <controls:WindowTitleBar Grid.Row="0"
+                                 Icon="pack://application:,,,/Resources/FoolMoon.png"
+                                 Title="{Binding WindowTitle}"
+                                 ShowMinimizeButton="False"
+                                 ShowMaximizeButton="False"/>
+
+        <!-- 内容区域 -->
+        <Grid Grid.Row="1" Margin="15">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- 星期标头 -->
+            <UniformGrid Grid.Row="0" Columns="7" Margin="0,0,0,10">
+                <TextBlock Text="一" Style="{StaticResource WeekdayHeaderStyle}"/>
+                <TextBlock Text="二" Style="{StaticResource WeekdayHeaderStyle}"/>
+                <TextBlock Text="三" Style="{StaticResource WeekdayHeaderStyle}"/>
+                <TextBlock Text="四" Style="{StaticResource WeekdayHeaderStyle}"/>
+                <TextBlock Text="五" Style="{StaticResource WeekdayHeaderStyle}"/>
+                <TextBlock Text="六" Style="{StaticResource WeekdayHeaderStyle}"/>
+                <TextBlock Text="日" Style="{StaticResource WeekdayHeaderStyle}"/>
+            </UniformGrid>
+
+            <!-- 日期网格 -->
+            <ItemsControl Grid.Row="1" ItemsSource="{Binding Days}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="7" Rows="6"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Content="{Binding DisplayText}"
+                                Style="{Binding IsExists, Converter={StaticResource ExistsButtonStyleConverter}, FallbackValue={StaticResource DateButtonStyle}}"
+                                IsEnabled="{Binding IsEnabled}"
+                                Command="{Binding DataContext.SelectDateCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                CommandParameter="{Binding}">
+                            <Button.ToolTip>
+                                <TextBlock Text="{Binding ToolTip}" />
+                            </Button.ToolTip>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- 错误信息和取消按钮 -->
+            <Grid Grid.Row="2" Margin="0,10,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding ErrorMessage}" Foreground="Red" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Content="取消" Style="{StaticResource DialogButtonStyle}"
+                        Command="{Binding CancelCommand}" Margin="0,0,10,0" VerticalAlignment="Center"/>
+            </Grid>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

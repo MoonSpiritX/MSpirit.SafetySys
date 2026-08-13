@@ -1,0 +1,23 @@
+<UserControl x:Class="MS_SafetyManagementSystem.Peoplemanagement.PersonnelRecordsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:people="clr-namespace:MS_SafetyManagementSystem.Peoplemanagement"
+             x:Name="RootControl">
+
+    <ScrollViewer x:Name="RecordsScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                  ScrollViewer.CanContentScroll="False"
+                  PreviewMouseWheel="RecordsScrollViewer_PreviewMouseWheel">
+        <ItemsControl x:Name="RecordsItemsControl" ItemsSource="{Binding Records, ElementName=RootControl}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <people:PersonnelRecordCardView Record="{Binding}" Width="860" Height="Auto" Margin="6"/>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </ScrollViewer>
+</UserControl>

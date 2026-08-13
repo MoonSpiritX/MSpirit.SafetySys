@@ -1,0 +1,189 @@
+﻿<UserControl x:Class="MS_SafetyManagementSystem.Hazard.MonthlyStatisticsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:MS_SafetyManagementSystem.Converters"
+             xmlns:helpers="clr-namespace:MS_SafetyManagementSystem.Helpers"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="800">
+    <UserControl.Resources>
+        <converters:TextToBrushConverter x:Key="TextToBrushConverter"/>
+
+        <!-- 公用居中文本样式 -->
+        <Style x:Key="CenteredTextStyle" TargetType="TextBlock">
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- 公用左对齐文本样式 -->
+        <Style x:Key="LeftAlignedTextStyle" TargetType="TextBlock">
+            <Setter Property="TextAlignment" Value="Left"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+
+        <!-- 行样式 -->
+        <Style x:Key="MonthlyStatisticsRowStyle" TargetType="DataGridRow">
+            <Setter Property="Background" Value="Transparent"/>
+            <Style.Triggers>
+                <Trigger Property="AlternationIndex" Value="0">
+                    <Setter Property="Background" Value="#CCFDFDFD"/>
+                </Trigger>
+                <Trigger Property="AlternationIndex" Value="1">
+                    <Setter Property="Background" Value="#CCF0F0F0"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E5F0FA"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#FF9EC4EA"/>
+                    <Setter Property="Foreground" Value="#1A1A1A"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 单元格样式 -->
+        <Style x:Key="MonthlyStatisticsCellStyle" TargetType="DataGridCell">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="4,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="Foreground" Value="#000000"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 列头样式（保持外观，无排序交互） -->
+        <Style x:Key="MonthlyStatisticsColumnHeaderStyle" TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#19FFFFFF"/>
+            <Setter Property="BorderBrush" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="#1A1A1A"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="FontSize" Value="11pt"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="4,0"/>
+            <Setter Property="Cursor" Value="Arrow"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E5F0FA"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 主表格样式 -->
+        <Style x:Key="MonthlyStatisticsDataGridStyle" TargetType="DataGrid">
+            <Setter Property="RowHeight" Value="30"/>
+            <Setter Property="ColumnHeaderHeight" Value="35"/>
+            <Setter Property="BorderBrush" Value="#DDDDDD"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#DDDDDD"/>
+            <Setter Property="VerticalGridLinesBrush" Value="Transparent"/>
+            <Setter Property="AlternationCount" Value="2"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="CanUserDeleteRows" Value="False"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+            <Setter Property="CanUserSortColumns" Value="False"/>
+            <Setter Property="RowStyle" Value="{StaticResource MonthlyStatisticsRowStyle}"/>
+            <Setter Property="CellStyle" Value="{StaticResource MonthlyStatisticsCellStyle}"/>
+            <Setter Property="ColumnHeaderStyle" Value="{StaticResource MonthlyStatisticsColumnHeaderStyle}"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="30"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal" Margin="10,5,0,5" HorizontalAlignment="Left">
+            <Button Content="一键导出" Width="90" Height="30" FontSize="10pt"
+                    Style="{StaticResource BaseButtonStyle}" BorderBrush="White"
+                    ToolTip="快速导出当前列表内显示的隐患统计数据"
+                    Click="OneClickExport_Click"/>
+            <Button Content="本月数据导出" Width="105" Height="30" FontSize="10pt" Margin="8,0,0,0"
+                    Style="{StaticResource BaseButtonStyle}" BorderBrush="White"
+                    Click="ExportCurrentMonth_Click"/>
+            <Button Content="本月数据分析" Width="105" Height="30" FontSize="10pt" Margin="8,0,0,0"
+                    Style="{StaticResource BaseButtonStyle}" BorderBrush="White"
+                    Click="AnalysisCurrentMonth_Click"/>
+        </StackPanel>
+
+        <!-- 数据表格区域 -->
+        <DataGrid x:Name="StatisticsDataGrid" Grid.Row="1"
+                  ItemsSource="{Binding Rows}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  SelectionUnit="FullRow"
+                  BorderBrush="#DDDDDD"
+                  BorderThickness="1"
+                  RowHeight="30"
+                  ColumnHeaderHeight="35"
+                  FrozenColumnCount="2"
+                  AlternationCount="2"
+                  Background="Transparent"
+                  helpers:DataGridScrollBehavior.EnableShiftHorizontalScroll="True"
+                  helpers:DataGridScrollBehavior.EnableInertialScroll="True"
+                  ScrollViewer.CanContentScroll="False"
+                  MouseDoubleClick="DataGrid_MouseDoubleClick"
+                  PreviewKeyDown="StatisticsDataGrid_PreviewKeyDown"
+                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                  Style="{StaticResource MonthlyStatisticsDataGridStyle}"
+                  HorizontalAlignment="Left"
+                  VerticalAlignment="Top">
+                <DataGrid.Columns>
+                    <!-- 状态列（带颜色） -->
+                    <DataGridTextColumn Header="进度" Width="50" MinWidth="40" Binding="{Binding Status}" 
+                                        SortMemberPath="Status">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource CenteredTextStyle}">
+                                <Setter Property="Foreground" Value="{Binding Status, Converter={StaticResource TextToBrushConverter}, ConverterParameter='完成|Black,进行|#4CAF50,超期|#E91E63,无效|#9E9E9E'}"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="序号" Width="50" MinWidth="40" Binding="{Binding RowNumber}" 
+                                        SortMemberPath="RowNumber" ElementStyle="{StaticResource CenteredTextStyle}"/>
+                <DataGridTextColumn Header="日期" Width="100" MinWidth="90" Binding="{Binding RecordDate, StringFormat='yyyy-MM-dd'}" 
+                                        SortMemberPath="Date" ElementStyle="{StaticResource CenteredTextStyle}"/>
+                <DataGridTextColumn Header="责任单位" Width="130" MinWidth="100" Binding="{Binding ResponsibleUnit}" 
+                                        SortMemberPath="ResponsibleUnit" ElementStyle="{StaticResource CenteredTextStyle}"/>
+                    <DataGridTextColumn Header="责任人" Width="70" MinWidth="60" Binding="{Binding ResponsiblePerson}" 
+                                        SortMemberPath="ResponsiblePerson" ElementStyle="{StaticResource CenteredTextStyle}"/>
+                    <DataGridTextColumn Header="隐患位置" Width="120" MinWidth="90" Binding="{Binding Location}" 
+                                        SortMemberPath="Location" ElementStyle="{StaticResource CenteredTextStyle}"/>
+                    <DataGridTextColumn Header="隐患类型" Width="110" MinWidth="80" Binding="{Binding HazardType}" 
+                                        SortMemberPath="HazardType" ElementStyle="{StaticResource CenteredTextStyle}"/>
+                    <DataGridTextColumn Header="级别" Width="60" MinWidth="55" Binding="{Binding HazardLevel}" 
+                                        SortMemberPath="HazardLevel" ElementStyle="{StaticResource CenteredTextStyle}"/>
+                    <DataGridTextColumn Header="整改期限" Width="100" MinWidth="90" Binding="{Binding Deadline, StringFormat='yyyy-MM-dd'}" 
+                                        SortMemberPath="Deadline" ElementStyle="{StaticResource CenteredTextStyle}"/>
+                    <DataGridTextColumn Header="完成日期" Width="100" MinWidth="90" Binding="{Binding CompletedDate, StringFormat='yyyy-MM-dd'}" 
+                                        SortMemberPath="CompletedDate" ElementStyle="{StaticResource CenteredTextStyle}"/>
+                    <DataGridTextColumn Header="复查人" Width="70" MinWidth="60" Binding="{Binding Reviewer}" 
+                                        SortMemberPath="Reviewer" ElementStyle="{StaticResource CenteredTextStyle}"/>
+                    <DataGridTextColumn Header="隐患描述" Width="1.5*" MinWidth="150" MaxWidth="300" Binding="{Binding Description}" 
+                                        SortMemberPath="Description" ElementStyle="{StaticResource LeftAlignedTextStyle}"/>
+                    <DataGridTextColumn Header="整改措施" Width="1.5*" MinWidth="150" MaxWidth="300" Binding="{Binding Measure}" 
+                                        SortMemberPath="Measure" ElementStyle="{StaticResource LeftAlignedTextStyle}"/>
+                    <DataGridTextColumn Header="隐患照片" Width="70" MinWidth="70" Binding="{Binding HazardPhotoCount}" 
+                                        SortMemberPath="HazardPhotoCount" ElementStyle="{StaticResource CenteredTextStyle}"/>
+                    <DataGridTextColumn Header="整改照片" Width="70" MinWidth="70" Binding="{Binding RemedyPhotoCount}" 
+                                        SortMemberPath="RemedyPhotoCount" ElementStyle="{StaticResource CenteredTextStyle}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        <Border Grid.Row="2" Height="30" Background="Transparent">
+            <TextBlock Text="提示：滚轮-列表上下滚动；Shift+滚轮-左右滚动；或使用键盘方向键"
+                       FontSize="9pt" Foreground="#888888" 
+                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
+    </Grid>
+</UserControl>

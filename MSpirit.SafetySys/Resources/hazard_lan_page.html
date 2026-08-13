@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>隐患手机录入</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:#f5f5f5; color:#333; overflow:hidden; height:100vh; display:flex; flex-direction:column; }
+.header { background:#fff; padding:12px 16px; border-bottom:1px solid #e0e0e0; flex-shrink:0; }
+.header h2 { font-size:18px; margin-bottom:4px; }
+.form-section { flex:1; overflow-y:auto; min-height:0; padding:12px 16px; }
+.form-row { display:flex; gap:10px; margin-bottom:10px; }
+.form-field { flex:1; display:flex; flex-direction:column; }
+.form-field label { font-size:14px; color:#666; margin-bottom:4px; font-family:'Microsoft YaHei','黑体',sans-serif; }
+.form-field input, .form-field textarea, .form-field select {
+  font-size:15px; padding:8px 10px; border:1px solid #ddd; border-radius:6px;
+  background:#fff; font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+  outline:none; transition:border-color .2s; width:100%;
+}
+.form-field input:focus, .form-field textarea:focus, .form-field select:focus { border-color:#1a73e8; }
+.form-field textarea { resize:vertical; min-height:80px; }
+.status-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-left:8px; vertical-align:middle; }
+.status-dot.online { background:#34a853; }
+.status-dot.offline { background:#ccc; }
+.header-info-text { font-family:'Microsoft YaHei','黑体',sans-serif; font-size:15px; color:#888; }
+.date-select { font-family:'Microsoft YaHei','黑体',sans-serif; font-size:15px; color:#888; background:transparent; border:1px solid #ddd; border-radius:4px; padding:2px 4px; width:50vw; }
+.photo-section { background:#fff; padding:12px 16px 100px; border-top:1px solid #e0e0e0; flex-shrink:0; }
+.photo-grid { display:flex; gap:10px; margin-bottom:10px; }
+.photo-box { flex:1; aspect-ratio:1.6; border:2px dashed #ccc; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; background:#fafafa; position:relative; overflow:hidden; transition:border-color .2s; }
+.photo-box:active { border-color:#1a73e8; }
+.photo-box .hint { font-size:15px; color:#999; text-align:center; line-height:1.4; pointer-events:none; }
+.photo-box img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; display:none; }
+.photo-box.has-photo { border-color:#1a73e8; border-style:solid; }
+.photo-box.has-photo .hint { display:none; }
+.photo-box.has-photo img { display:block; }
+.submit-btn { display:block; width:100%; padding:14px; border:none; border-radius:10px; font-size:16px; cursor:pointer; text-align:center; background:#1a73e8; color:#fff; font-weight:500; }
+.submit-btn:disabled { background:#ccc; cursor:not-allowed; }
+.submit-btn.loading { background:#f5a623; }
+.file-input { display:none; }
+.toast { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.75); color:#fff; padding:12px 24px; border-radius:8px; font-size:15px; z-index:999; pointer-events:none; opacity:0; transition:opacity .3s; }
+.toast.show { opacity:1; }
+</style>
+</head>
+<body>
+
+<!-- 第1部分：顶栏 -->
+<div class="header">
+  <h2>隐患手机录入<span id="serverStatusWrap" style="font-size:15px;font-weight:400;color:#999;margin-left:4px;vertical-align:middle;">[<span class="status-dot" id="serverDot"></span><span id="serverLabel">终端服务已启用</span>]</span></h2>
+  <div id="yearMonthText" class="header-info-text">年月分组：--</div>
+  <div style="margin-top:2px;display:flex;align-items:center;">
+    <span class="header-info-text" style="flex-shrink:0;">日期：</span>
+    <select class="date-select" id="dateSelect"></select>
+  </div>
+</div>
+
+<!-- 第2部分：表单 -->
+<div class="form-section">
+  <div class="form-row">
+    <div class="form-field">
+      <label>隐患位置</label>
+      <input type="text" id="inputLocation" placeholder="请输入隐患位置" maxlength="200" oninput="checkFormValidity()">
+    </div>
+    <div class="form-field">
+      <label>级别</label>
+      <select id="inputLevel" onchange="checkFormValidity()">
+        <option value="">请选择级别</option>
+        <option value="一般隐患">一般隐患</option>
+        <option value="较大隐患">较大隐患</option>
+        <option value="重大隐患">重大隐患</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-field">
+      <label>隐患描述</label>
+      <textarea id="inputDescription" placeholder="请输入隐患描述" maxlength="2000" oninput="checkFormValidity()"></textarea>
+    </div>
+    <div class="form-field">
+      <label>整改措施</label>
+      <textarea id="inputMeasure" placeholder="请输入整改措施" maxlength="2000"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- 第3部分：拍照区 + 提交按钮 -->
+<div class="photo-section">
+  <div class="photo-grid">
+    <div class="photo-box" id="boxHazard" onclick="document.getElementById('fileHazard').click()">
+      <div class="hint">点击拍摄<br>隐患照片</div>
+      <img id="previewHazard">
+    </div>
+    <div class="photo-box" id="boxRemedy" onclick="document.getElementById('fileRemedy').click()">
+      <div class="hint">点击拍摄<br>整改照片</div>
+      <img id="previewRemedy">
+    </div>
+  </div>
+  <button class="submit-btn" id="submitBtn" onclick="submitEntry()" disabled>请填写隐患位置、级别和描述</button>
+</div>
+
+<!-- 隐藏的 file input（无 capture，手机浏览器自动弹出拍照/相册菜单） -->
+<input class="file-input" type="file" accept="image/*" id="fileHazard">
+<input class="file-input" type="file" accept="image/*" id="fileRemedy">
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ==================== 状态 ====================
+var params = new URLSearchParams(location.search);
+var groupId = params.get('groupId') || '';
+var groupName = params.get('groupName') || '';
+var yearMonth = params.get('yearMonth') || '';
+var token = params.get('token') || '';
+
+// 初始化年月分组显示
+var yearMonthText = document.getElementById('yearMonthText');
+if (yearMonth) {
+  yearMonthText.textContent = '年月分组：' + yearMonth;
+} else {
+  yearMonthText.textContent = '年月分组：--';
+}
+
+// ==================== Toast 提示 ====================
+var toastEl = document.getElementById('toast');
+var toastTimer = null;
+function showToast(msg, duration) {
+  duration = duration || 2000;
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() {
+    toastEl.classList.remove('show');
+  }, duration);
+}
+
+// ==================== 服务心跳检测 ====================
+var serverDot = document.getElementById('serverDot');
+var serverLabel = document.getElementById('serverLabel');
+var pingTimer = null;
+
+function setServerOnline() {
+  serverDot.className = 'status-dot online';
+  serverLabel.textContent = ' 终端服务已启用';
+}
+function setServerOffline() {
+  serverDot.className = 'status-dot offline';
+  serverLabel.textContent = ' 终端服务已关闭';
+}
+
+function checkServer() {
+  var controller = new AbortController();
+  pingTimer = setTimeout(function() { controller.abort(); }, 2000);
+  fetch('/ping?token=' + encodeURIComponent(token), { signal: controller.signal }).then(function(r) { return r.json(); }).then(function(data) {
+    clearTimeout(pingTimer);
+    setServerOnline();
+    if (data.groupName) {
+      groupName = data.groupName;
+    }
+    if (data.yearMonth && !yearMonth) {
+      yearMonth = data.yearMonth;
+      yearMonthText.textContent = '年月分组：' + yearMonth;
+      loadDates();
+    }
+  }).catch(function() {
+    clearTimeout(pingTimer);
+    setServerOffline();
+  });
+}
+checkServer();
+setInterval(checkServer, 3000);
+
+// ==================== 加载日期列表 ====================
+var dateSelect = document.getElementById('dateSelect');
+var currentDate = 0; // 当前选择的日期
+var defaultDay = 0;
+
+function loadDates() {
+  if (!yearMonth) return;
+  var url = '/dates?yearMonth=' + encodeURIComponent(yearMonth) + '&token=' + encodeURIComponent(token);
+  if (groupId) url += '&groupId=' + encodeURIComponent(groupId);
+  fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.dates && data.dates.length > 0) {
+        dateSelect.innerHTML = '';
+        data.dates.forEach(function(d) {
+          var opt = document.createElement('option');
+          opt.value = d.day;
+          opt.textContent = d.label;
+          dateSelect.appendChild(opt);
+        });
+        defaultDay = data.defaultDay || data.dates[0].day;
+        // 设置默认选中
+        dateSelect.value = defaultDay;
+        currentDate = defaultDay;
+      }
+    })
+    .catch(function() {
+      showToast('加载日期列表失败');
+    });
+}
+loadDates();
+
+dateSelect.addEventListener('change', function() {
+  currentDate = parseInt(dateSelect.value) || 0;
+});
+
+// ==================== 拍照 ====================
+var hazardFile = null;
+var remedyFile = null;
+
+document.getElementById('fileHazard').addEventListener('change', function(e) {
+  handleFileSelect(e, 'hazard');
+});
+document.getElementById('fileRemedy').addEventListener('change', function(e) {
+  handleFileSelect(e, 'remedy');
+});
+
+// ==================== 表单校验 ====================
+function checkFormValidity() {
+  var location = document.getElementById('inputLocation').value.trim();
+  var level = document.getElementById('inputLevel').value;
+  var description = document.getElementById('inputDescription').value.trim();
+  var btn = document.getElementById('submitBtn');
+  if (location && level && description) {
+    btn.disabled = false;
+    btn.textContent = '开始上传隐患记录';
+  } else {
+    btn.disabled = true;
+    btn.textContent = '请填写隐患位置、级别和描述';
+  }
+}
+
+function handleFileSelect(e, type) {
+  var file = e.target.files[0];
+  if (!file) return;
+
+  if (type === 'hazard') {
+    hazardFile = file;
+    showPreview(file, 'previewHazard', 'boxHazard');
+  } else {
+    remedyFile = file;
+    showPreview(file, 'previewRemedy', 'boxRemedy');
+  }
+}
+
+function showPreview(file, imgId, boxId) {
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var img = document.getElementById(imgId);
+    img.src = ev.target.result;
+    document.getElementById(boxId).classList.add('has-photo');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ==================== 压缩上传 ====================
+function compressAndUpload(file, type) {
+  return new Promise(function(resolve) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var w = img.width, h = img.height;
+      var maxSide = 1200;
+      if (w > h && w > maxSide) { h *= maxSide / w; w = maxSide; }
+      else if (h > maxSide) { w *= maxSide / h; h = maxSide; }
+      canvas.width = Math.round(w);
+      canvas.height = Math.round(h);
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(function(blob) {
+        var url = '/upload-photo?type=' + type + '&tempId=' + encodeURIComponent(currentSessionId) + '&token=' + encodeURIComponent(token);
+        fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'image/jpeg' },
+          body: blob
+        }).then(function(r) { return r.json(); }).then(function(data) {
+          resolve(data);
+        }).catch(function(err) {
+          resolve({ ok: false, error: err.message });
+        });
+      }, 'image/jpeg', 0.7);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// ==================== 提交 ====================
+function submitEntry() {
+  var location = document.getElementById('inputLocation').value.trim();
+  var level = document.getElementById('inputLevel').value;
+  var description = document.getElementById('inputDescription').value.trim();
+  var measure = document.getElementById('inputMeasure').value.trim();
+
+  if (!location) { showToast('请输入隐患位置'); return; }
+  if (!level) { showToast('请选择隐患级别'); return; }
+  if (!description) { showToast('请输入隐患描述'); return; }
+  if (!currentDate) { showToast('请选择日期'); return; }
+
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '上传中...';
+  btn.classList.add('loading');
+
+  // 生成统一会话 ID
+  currentSessionId = 'hzd_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+
+  var uploadPromises = [];
+  if (hazardFile) uploadPromises.push(compressAndUpload(hazardFile, 'hazard'));
+  if (remedyFile) uploadPromises.push(compressAndUpload(remedyFile, 'remedy'));
+
+  Promise.all(uploadPromises).then(function() {
+    return fetch('/submit?token=' + encodeURIComponent(token), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        groupId: groupId,
+        date: currentDate,
+        location: location,
+        level: level,
+        description: description,
+        measure: measure,
+        hazardPhotoId: currentSessionId,
+        remedyPhotoId: currentSessionId,
+        yearMonth: yearMonth
+      })
+    });
+  }).then(function(r) { return r.json(); }).then(function(data) {
+    if (data.ok) {
+      showToast('隐患记录上传成功', 3000);
+      clearForm();
+      btn.classList.remove('loading');
+      checkFormValidity(); // 恢复按钮为禁用状态
+    } else {
+      showToast(data.error || '上传失败', 3000);
+      btn.disabled = false;
+      btn.textContent = '开始上传隐患记录';
+      btn.classList.remove('loading');
+    }
+  }).catch(function(err) {
+    showToast('网络错误，请重试', 3000);
+    btn.disabled = false;
+    btn.textContent = '开始上传隐患记录';
+    btn.classList.remove('loading');
+  });
+}
+
+// ==================== 清空表单 ====================
+function clearForm() {
+  document.getElementById('inputLocation').value = '';
+  document.getElementById('inputLevel').value = '';
+  document.getElementById('inputDescription').value = '';
+  document.getElementById('inputMeasure').value = '';
+  // 保留日期选择不变
+
+  hazardFile = null;
+  remedyFile = null;
+  document.getElementById('previewHazard').src = '';
+  document.getElementById('previewRemedy').src = '';
+  document.getElementById('boxHazard').classList.remove('has-photo');
+  document.getElementById('boxRemedy').classList.remove('has-photo');
+  document.getElementById('fileHazard').value = '';
+  document.getElementById('fileRemedy').value = '';
+}
+</script>
+</body>
+</html>

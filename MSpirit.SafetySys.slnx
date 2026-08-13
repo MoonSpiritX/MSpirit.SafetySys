@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/解决方案项/">
+    <File Path="docs/ISSUES.md" />
+    <File Path="docs/PRIVACY_POLICY.md" />
+    <File Path="docs/README.md" />
+    <File Path="docs/开发约定.md" />
+    <File Path="docs/开源许可中文参考.md" />
+    <File Path="docs/数据架构.md" />
+    <File Path="docs/更新器使用说明.md" />
+    <File Path="docs/用户手册.md" />
+    <File Path="docs/线程异常退出Bug分析.md" />
+    <File Path="docs/自动备份机制.md" />
+  </Folder>
+  <Project Path="MSpirit.SafetySys.Launcher\MSpirit.SafetySys.Launcher.csproj" />
+  <Project Path="MSpirit.SafetySys.Tests\MSpirit.SafetySys.Tests.csproj" />
+  <Project Path="MSpirit.SafetySys.Updater\MSpirit.SafetySys.Updater.csproj" />
+  <Project Path="MSpirit.SafetySys\MS_SafetyManagementSystem.csproj" />
+</Solution>

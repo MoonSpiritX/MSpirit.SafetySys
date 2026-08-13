@@ -1,0 +1,119 @@
+﻿<ui:FluentWindow x:Class="MS_SafetyManagementSystem.Views.UsageGuideWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:controls="clr-namespace:MS_SafetyManagementSystem.Controls"
+                 xmlns:helpers="clr-namespace:MS_SafetyManagementSystem.Helpers"
+                 Title="使用提示"
+                 MinWidth="860" MinHeight="560"
+                 Width="920" Height="600"
+                 WindowStartupLocation="CenterOwner"
+                 ResizeMode="CanResize"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round"
+                 helpers:WindowDragHelper.EnableDrag="True">
+
+
+    <Grid Background="Transparent">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <controls:WindowTitleBar Grid.Row="0"
+                                 Icon="pack://application:,,,/Resources/FoolMoon.png"
+                                 Title="使用提示"
+                                 ShowMinimizeButton="False"
+                                 ShowMaximizeButton="False"/>
+
+        <!-- 左右布局：左侧选项区 / 右侧内容区 -->
+        <Grid Grid.Row="1" Margin="0,5,0,0">
+            <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="160"/>
+            <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 左侧：选项区（背景透明，透出窗口云母效果） -->
+            <Border Grid.Column="0" Background="Transparent" BorderBrush="#E0E0E0" BorderThickness="0,0,1,0">
+                <ListBox x:Name="GuideListBox"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         FontSize="11pt"
+                         Padding="0"
+                         SelectionChanged="GuideListBox_SelectionChanged"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                            <Setter Property="Margin" Value="10,1"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="Bd"
+                                                Background="{TemplateBinding Background}"
+                                                CornerRadius="6"
+                                                Padding="9,10">
+                                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                              VerticalAlignment="Center"/>
+                                        </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource MouseOverBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource SelectedBrush}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBoxItem x:Name="HazardItem" Content="隐患管理模块"/>
+                    <ListBoxItem x:Name="PersonnelItem" Content="人员管理模块"/>
+                    <ListBoxItem x:Name="ProjectItem" Content="项目管理"/>
+                    <ListBoxItem x:Name="ImageViewerItem" Content="图片查看器"/>
+                    <ListBoxItem x:Name="ImportExportItem" Content="智能导出导入"/>
+                    <ListBoxItem x:Name="LanItem" Content="手机 LAN 录入"/>
+                    <ListBoxItem x:Name="CreateTableItem" Content="创建标准表格"/>
+                </ListBox>
+            </Border>
+
+            <!-- 右侧：内容区 -->
+            <Grid Grid.Column="1" Margin="16,10,10,20">
+                <ScrollViewer x:Name="ContentScrollViewer"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <TextBlock x:Name="GuideContentText"
+                                   FontSize="11pt"
+                                   Foreground="#1A1A1A"
+                                   TextWrapping="Wrap"
+                                   LineHeight="26"
+                                   LineStackingStrategy="BlockLineHeight"/>
+
+                        <!-- 创建标准表格示例图（仅该栏显示，位于文本下方） -->
+                        <Border x:Name="CreateTableExamplePanel"
+                                Margin="0,16,0,8"
+                                Padding="8"
+                                Background="Transparent"
+                                CornerRadius="8"
+                                BorderBrush="#E0E0E0"
+                                BorderThickness="1"
+                                HorizontalAlignment="Center"
+                                Visibility="Collapsed">
+                            <Image x:Name="CreateTableExampleImage"
+                                   Source="pack://application:,,,/Resources/CreateTableExample.png"
+                                   MaxWidth="680"
+                                   Stretch="Uniform"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

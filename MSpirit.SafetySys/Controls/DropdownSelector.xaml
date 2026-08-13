@@ -1,0 +1,41 @@
+<UserControl x:Class="MS_SafetyManagementSystem.Controls.DropdownSelector"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:MS_SafetyManagementSystem.Controls"
+             Width="130" Height="28"
+             TextOptions.TextFormattingMode="Display"
+             PreviewMouseLeftButtonDown="Control_PreviewMouseLeftButtonDown">
+
+    <Border BorderBrush="#CCFFFFFF" BorderThickness="1" CornerRadius="6"
+            Background="Transparent">
+        <Border.Style>
+            <Style TargetType="Border">
+                <Setter Property="Background" Value="Transparent"/>
+            </Style>
+        </Border.Style>
+        <Grid Background="Transparent" Cursor="Hand">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="DisplayTextBox" Grid.Column="0"
+                     Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                     BorderThickness="0" Background="Transparent"
+                     VerticalContentAlignment="Center" Padding="6,0"
+                     IsReadOnly="True" Focusable="False">
+                <TextBox.Style>
+                    <Style TargetType="TextBox">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                    </Style>
+                </TextBox.Style>
+            </TextBox>
+            <controls:ArrowToggleButton x:Name="ArrowButton" Grid.Column="1"
+                                        Direction="Down"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,8,0"
+                                        IsHitTestVisible="False"
+                                        Focusable="False"/>
+        </Grid>
+    </Border>
+</UserControl>

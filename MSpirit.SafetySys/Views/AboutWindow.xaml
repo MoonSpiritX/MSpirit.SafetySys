@@ -1,0 +1,242 @@
+﻿<ui:FluentWindow x:Class="MS_SafetyManagementSystem.Views.AboutWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:controls="clr-namespace:MS_SafetyManagementSystem.Controls"
+                 xmlns:helpers="clr-namespace:MS_SafetyManagementSystem.Helpers"
+                 Title="关于软件"
+                 MinWidth="860" MinHeight="560"
+                 Width="920" Height="600"
+                 WindowStartupLocation="CenterOwner"
+                 ResizeMode="CanResize"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round"
+                 helpers:WindowDragHelper.EnableDrag="True">
+
+    <ui:FluentWindow.Resources>
+        <!-- 复制图标（Segoe MDL2 Assets 内置字体，Windows 10/11 自带） -->
+        <Style x:Key="CopyIconStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="Text" Value="&#xE8C8;"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#5F5E5A"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- 复制图标小按钮（网页风格：无边框，悬停淡蓝背景） -->
+        <Style x:Key="CopyButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="26"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="Margin" Value="6,0,0,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#E5F3FF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#CCE3F7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </ui:FluentWindow.Resources>
+
+
+    <Grid Background="Transparent">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <controls:WindowTitleBar Grid.Row="0"
+                                 Icon="pack://application:,,,/Resources/FoolMoon.png"
+                                 Title="关于软件"
+                                 ShowMinimizeButton="False"
+                                 ShowMaximizeButton="False"/>
+
+        <!-- 左右布局：左侧选项区 / 右侧内容区 -->
+        <Grid Grid.Row="1" Margin="0,5,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 左侧：选项区（背景透明，透出窗口云母效果；样式与使用提示窗口一致） -->
+            <Border Grid.Column="0" Background="Transparent" BorderBrush="#E0E0E0" BorderThickness="0,0,1,0">
+                <ListBox x:Name="AboutListBox"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         FontSize="11pt"
+                         Padding="0"
+                         SelectionChanged="AboutListBox_SelectionChanged"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                            <Setter Property="Margin" Value="10,1"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="Bd"
+                                                Background="{TemplateBinding Background}"
+                                                CornerRadius="6"
+                                                Padding="9,10">
+                                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                              VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource MouseOverBrush}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource SelectedBrush}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBoxItem x:Name="SoftwareItem" Content="关于软件"/>
+                    <ListBoxItem x:Name="ChangelogItem" Content="更新日志"/>
+                    <ListBoxItem x:Name="AuthorItem" Content="作者信息"/>
+                </ListBox>
+            </Border>
+
+            <!-- 右侧：内容区（文字 + 二维码图片，随滚动条一起滚动） -->
+            <Grid Grid.Column="1" Margin="20,10,10,20">
+                <ScrollViewer x:Name="ContentScrollViewer"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <!-- 「关于软件」栏文字 -->
+                        <TextBlock x:Name="AboutContentText"
+                                   FontSize="11pt"
+                                   Foreground="#1A1A1A"
+                                   TextWrapping="Wrap"
+                                   LineHeight="26"
+                                   LineStackingStrategy="BlockLineHeight"/>
+
+                        <!-- 「作者信息」栏（独立面板：文字 + 复制按钮 + 超链接 + 二维码） -->
+                        <StackPanel x:Name="AuthorInfoPanel" Visibility="Collapsed">
+                            <TextBlock FontSize="11pt" Foreground="#1A1A1A" LineHeight="26"
+                                       LineStackingStrategy="BlockLineHeight"
+                                       Text="【作者信息】"/>
+
+                            <TextBlock FontSize="11pt" Foreground="#1A1A1A" LineHeight="26"
+                                       LineStackingStrategy="BlockLineHeight"
+                                       Text="一、作者"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <TextBlock Text="  · 笔名：斜月Spirit（AXin）" FontSize="11pt" Foreground="#1A1A1A"
+                                           VerticalAlignment="Center"/>
+                                <Button Style="{StaticResource CopyButtonStyle}" ToolTip="复制到剪贴板"
+                                        Click="CopyText_Click" Tag="斜月Spirit（AXin）">
+                                    <TextBlock Style="{StaticResource CopyIconStyle}"/>
+                                </Button>
+                            </StackPanel>
+                            <TextBlock Text="  · 职业：建筑行业企业安全管理工程师" FontSize="11pt" Foreground="#1A1A1A"
+                                       Margin="0,4,0,0"/>
+
+                            <TextBlock FontSize="11pt" Foreground="#1A1A1A" LineHeight="26"
+                                       LineStackingStrategy="BlockLineHeight" Margin="0,10,0,0"
+                                       Text="二、联系方式"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <TextBlock Text="  · 邮箱：374532719@qq.com" FontSize="11pt" Foreground="#1A1A1A"
+                                           VerticalAlignment="Center"/>
+                                <Button Style="{StaticResource CopyButtonStyle}" ToolTip="复制到剪贴板"
+                                        Click="CopyText_Click" Tag="374532719@qq.com">
+                                    <TextBlock Style="{StaticResource CopyIconStyle}"/>
+                                </Button>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <TextBlock FontSize="11pt" Foreground="#1A1A1A" VerticalAlignment="Center">
+                                    <Run Text="  · GitHub："/>
+                                    <Hyperlink NavigateUri="https://github.com/MoonSpiritX"
+                                               RequestNavigate="OpenLink_RequestNavigate"
+                                               Foreground="#185FA5"
+                                               ToolTip="点击在浏览器中打开">
+                                        https://github.com/MoonSpiritX
+                                    </Hyperlink>
+                                </TextBlock>
+                                <Button Style="{StaticResource CopyButtonStyle}" ToolTip="复制到剪贴板"
+                                        Click="CopyText_Click" Tag="https://github.com/MoonSpiritX">
+                                    <TextBlock Style="{StaticResource CopyIconStyle}"/>
+                                </Button>
+                            </StackPanel>
+
+                            <TextBlock FontSize="11pt" Foreground="#1A1A1A" LineHeight="26"
+                                       LineStackingStrategy="BlockLineHeight" Margin="0,10,0,0"
+                                       Text="三、抖音交流群"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <TextBlock Text="  · 用户：斜月Spirit" FontSize="11pt" Foreground="#1A1A1A"
+                                           VerticalAlignment="Center"/>
+                                <Button Style="{StaticResource CopyButtonStyle}" ToolTip="复制到剪贴板"
+                                        Click="CopyText_Click" Tag="斜月Spirit">
+                                    <TextBlock Style="{StaticResource CopyIconStyle}"/>
+                                </Button>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <TextBlock Text="  · 群号：659306761979" FontSize="11pt" Foreground="#1A1A1A"
+                                           VerticalAlignment="Center"/>
+                                <Button Style="{StaticResource CopyButtonStyle}" ToolTip="复制到剪贴板"
+                                        Click="CopyText_Click" Tag="659306761979">
+                                    <TextBlock Style="{StaticResource CopyIconStyle}"/>
+                                </Button>
+                            </StackPanel>
+                            <TextBlock Text="  · 加入方式：打开抖音搜索页搜索群号或扫一扫二维码即可入群；"
+                                       FontSize="11pt" Foreground="#1A1A1A" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            <TextBlock Text="  · 群用途：用户反馈、Bug 提交、功能建议、新版本通知与技术交流。"
+                                       FontSize="11pt" Foreground="#1A1A1A" Margin="0,4,0,0" TextWrapping="Wrap"/>
+
+                            <!-- 抖音交流群二维码（位于文本下方） -->
+                            <Border x:Name="AuthorQRPanel"
+                                    Margin="0,16,0,8"
+                                    Padding="14,12"
+                                    Background="#FFFFFF"
+                                    CornerRadius="8"
+                                    BorderBrush="#E0E0E0"
+                                    BorderThickness="1"
+                                    HorizontalAlignment="Center">
+                                <StackPanel>
+                                    <Image x:Name="AuthorQRImage"
+                                           Source="pack://application:,,,/Resources/AuthorDouyinQR.jpg"
+                                           Width="399" Height="399"
+                                           Stretch="Uniform"
+                                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                                    <TextBlock Text="抖音交流群 · 群号 659306761979"
+                                               FontSize="10pt"
+                                               Foreground="#666666"
+                                               HorizontalAlignment="Center"
+                                               Margin="0,8,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- 「更新日志」栏（用户视角版本变更，内容依据 CHANGELOG.md 转译；版本标题前为勾选状态的复选框，样式与常用隐患类型管理窗口一致） -->
+                        <StackPanel x:Name="ChangelogPanel"
+                                    Visibility="Collapsed"
+                                    Margin="0,5,0,0"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

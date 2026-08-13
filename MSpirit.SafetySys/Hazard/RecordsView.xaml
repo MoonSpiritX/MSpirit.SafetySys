@@ -1,0 +1,24 @@
+﻿<UserControl x:Class="MS_SafetyManagementSystem.Hazard.RecordsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:MS_SafetyManagementSystem.Controls"
+             xmlns:hazard="clr-namespace:MS_SafetyManagementSystem.Hazard"
+             x:Name="RootControl">
+    <ScrollViewer x:Name="RecordsScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                  ScrollViewer.CanContentScroll="False"
+                  ScrollChanged="RecordsScrollViewer_ScrollChanged"
+                  PreviewMouseWheel="RecordsScrollViewer_PreviewMouseWheel">
+        <ItemsControl ItemsSource="{Binding Records, ElementName=RootControl}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <hazard:RecordCardView Record="{Binding}" Width="630" Height="600" Margin="10"/>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </ScrollViewer>
+</UserControl>

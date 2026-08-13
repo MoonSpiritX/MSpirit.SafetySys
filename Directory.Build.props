@@ -1,0 +1,22 @@
+<Project>
+  <PropertyGroup>
+    <!-- 默认 Configuration：不带 -c 构建时 $(Configuration) 为空会导致 OutputPath 漂移，此处兜底 -->
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <!-- 构建输出目录按项目分离（2026-08-10）：
+         历史问题：两项目共享 bin\obj_output\$(Configuration)\ 时，并行生成会互相污染产物，
+         导致主程序缺运行时文件、提示"必须安装运行时"。
+         现按项目名分流：主程序 → bin\$(Configuration).SafetySys\，启动器 → bin\$(Configuration).Launcher\
+         （Debug 构建即 bin\Debug.SafetySys / bin\Debug.Launcher，符合调试预期）
+         注意：仅影响 build 构建输出；publish 发布目录由 FolderProfile.pubxml / 打包脚本独立控制，
+         保持 bin\Release\MSpirit.SafetySys、bin\Release\Launcher 现状不变。 -->
+    <OutputPath Condition="'$(MSBuildProjectName)' == 'MS_SafetyManagementSystem'">$(MSBuildThisFileDirectory)bin\$(Configuration).SafetySys\</OutputPath>
+    <OutputPath Condition="'$(MSBuildProjectName)' == 'MSpirit.SafetySys.Launcher'">$(MSBuildThisFileDirectory)bin\$(Configuration).Launcher\</OutputPath>
+    <!-- 兜底：未来新增项目（如测试项目）默认按项目名独立输出，避免与上述目录混淆 -->
+    <OutputPath Condition="'$(OutputPath)' == ''">$(MSBuildThisFileDirectory)bin\$(Configuration).$(MSBuildProjectName)\</OutputPath>
+    <!-- 中间产物集中到根 obj\{项目名}\ 下（与 bin 对称）：避开项目目录内 obj 被 VS/进程锁定的问题 -->
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <!-- 输出路径不附加 TFM 与 RID 子目录：多项目产物平铺共存，仅靠文件名区分，避免互相覆盖 -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+</Project>

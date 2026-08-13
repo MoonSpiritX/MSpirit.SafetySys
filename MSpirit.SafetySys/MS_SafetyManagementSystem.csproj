@@ -1,0 +1,151 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.17763.0</TargetFramework>
+	<SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <Nullable>enable</Nullable>
+    <NoWarn>NU1701</NoWarn>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <Authors>AXin</Authors>
+    <Product>斜月安全管理系统（个人版 Beta）</Product>
+    <AssemblyName>MSpirit.SafetySys</AssemblyName>
+    <AssemblyTitle>斜月安全管理系统</AssemblyTitle>
+    <Version>1.1.0.0</Version>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
+    <ApplicationIcon>斜月安全管理系统.ico</ApplicationIcon>
+    <PackageIcon>MSAI.png</PackageIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <SignAssembly>False</SignAssembly>
+    <!-- 输出路径由根目录 Directory.Build.props 统一管理（平铺到根 bin\，无 TFM/RID 子目录） -->
+  </PropertyGroup>
+
+  <!-- 允许捕获 AccessViolationException（SkiaSharp native 崩溃防护） -->
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Runtime.ExceptionHandling.CorruptedStateExceptionsPolicy" Value="1" />
+  </ItemGroup>
+
+  <!-- Kestrel HTTP 服务器（替代 HttpListener，零 UAC 绑定 LAN IP） -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+	
+  <!-- 仅引用 WinForms 框架程序集（不启用 UseWindowsForms，避免隐式 using 造成类型歧义） -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="MS_ImageViewer\**" />
+    <Compile Remove="..\其他文件\**" />
+    <Compile Remove="..\MSpirit.SafetySys.Launcher\**" />
+    <EmbeddedResource Remove="MS_ImageViewer\**" />
+    <EmbeddedResource Remove="..\其他文件\**" />
+    <EmbeddedResource Remove="..\MSpirit.SafetySys.Launcher\**" />
+    <None Remove="MS_ImageViewer\**" />
+    <None Remove="..\其他文件\**" />
+    <None Remove="..\MSpirit.SafetySys.Launcher\**" />
+    <Page Remove="MS_ImageViewer\**" />
+    <Page Remove="..\其他文件\**" />
+    <Page Remove="..\MSpirit.SafetySys.Launcher\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Controls\FluentPopup.cs" />
+    <Compile Remove="Controls\WindowMaterial.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 备份文件不参与编译 -->
+    <Compile Remove="MainWindow（备份版本）.xaml" />
+    <Page Remove="MainWindow（备份版本）.xaml" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <None Remove="Data\SolarTerms.json" />
+    <None Remove="nul" />
+    <None Remove="Resources\01.png" />
+    <None Remove="Resources\Backgrounds\Calender1_Spring.png" />
+    <None Remove="Resources\Backgrounds\Calender2_Summer.png" />
+    <None Remove="Resources\Backgrounds\Calender3_Autumn.png" />
+    <None Remove="Resources\Backgrounds\Calender4_Winter.png" />
+    <None Remove="Resources\Backgrounds\Card1_Spring.png" />
+    <None Remove="Resources\Backgrounds\Card2_Summer.png" />
+    <None Remove="Resources\Backgrounds\Card3_Autumn.png" />
+    <None Remove="Resources\Backgrounds\Card4_Winter.png" />
+    <None Remove="Resources\Check.png" />
+    <None Remove="Resources\CheckNone.png" />
+    <None Remove="Resources\Dates.png" />
+    <None Remove="Resources\Documents.png" />
+    <None Remove="Resources\FoolMoon.png" />
+    <None Remove="Resources\Module.png" />
+    <None Remove="Resources\Projects.png" />
+    <None Remove="Resources\Settings.png" />
+    <None Remove="Resources\斜月安全管理系统256.png" />
+    <None Remove="【测试】MS_SafetyManagementSystem.exe.lnk" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <EmbeddedResource Include="Data\SolarTerms.json" />
+    <Resource Include="Resources\Dates.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\Backgrounds\Calender1_Spring.png" />
+    <Resource Include="Resources\Backgrounds\Calender2_Summer.png" />
+    <Resource Include="Resources\Backgrounds\Calender3_Autumn.png" />
+    <Resource Include="Resources\Backgrounds\Calender4_Winter.png" />
+    <Resource Include="Resources\Backgrounds\Card1_Spring.png" />
+    <Resource Include="Resources\Backgrounds\Card2_Summer.png" />
+    <Resource Include="Resources\Backgrounds\Card3_Autumn.png" />
+    <Resource Include="Resources\Backgrounds\Card4_Winter.png" />
+    <Resource Include="Resources\Check.png" />
+    <Resource Include="Resources\CheckNone.png" />
+    <Resource Include="Resources\Documents.png" />
+    <Resource Include="Resources\FoolMoon.png" />
+    <Resource Include="Resources\Module.png" />
+    <Resource Include="Resources\Projects.png" />
+    <Resource Include="Resources\Settings.png" />
+    <Resource Include="Resources\斜月安全管理系统256.png" />
+    <Resource Include="Resources\AuthorDouyinQR.jpg" />
+    <Resource Include="Resources\CreateTableExample.png" />
+    <Resource Include="斜月安全管理系统.ico" />
+    <None Update="Resources\lan_page.html" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Resources\hazard_lan_page.html" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Resources\photo_transfer_page.html" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+	
+  <ItemGroup>
+	
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    <PackageReference Include="DocumentFormat.OpenXml" Version="3.5.1" />
+    <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.4" />
+    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.11.0.20250507" />
+    <PackageReference Include="QRCoder" Version="1.8.0" />
+    <PackageReference Include="Sdcb.PaddleInference.runtime.win64.mkl" Version="3.3.1" />
+    <PackageReference Include="Sdcb.PaddleOCR" Version="3.3.1" />
+    <PackageReference Include="Sdcb.PaddleOCR.Models.Local" Version="3.3.1" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
+    <PackageReference Include="SkiaSharp.Views.WPF" Version="3.119.4" />
+    <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="1.1.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+    <PackageReference Include="WPF-UI" Version="4.3.0" />
+    <!-- 在 MS_SafetyManagementSystem.csproj 的 <ItemGroup> 中添加 -->
+	<PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
+	<PackageReference Include="Dapper" Version="2.1.79" />
+    <!-- EXIF 读取（手机图片传输按拍摄日期归档；与斜月图片查看器独立版 MSpirit.Core 同版本 2.8.1，未来整合零冲突） -->
+    <PackageReference Include="MetadataExtractor" Version="2.8.1" />
+  </ItemGroup>
+
+  <!-- 发布时只保留应用自身 PDB（MSpirit.SafetySys.pdb），排除所有第三方 PDB（libSkiaSharp.pdb 等大体积调试符号） -->
+  <Target Name="RemoveThirdPartyPdbFromPublish" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.Extension)' == '.pdb' And '%(ResolvedFileToPublish.FileName)' != 'MSpirit.SafetySys'" />
+    </ItemGroup>
+  </Target>
+
+</Project>

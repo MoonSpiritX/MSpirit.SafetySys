@@ -1,0 +1,428 @@
+{
+  "Version": "1.1",
+  "FieldMappings": [
+    {
+      "DataField": "Status",
+      "StandardName": "\u8FDB\u5EA6",
+      "Aliases": [
+        "\u72B6\u6001",
+        "\u8FDB\u5EA6",
+        "\u590D\u67E5\u60C5\u51B5",
+        "\u6574\u6539\u8FDB\u5EA6",
+        "\u6CBB\u7406\u60C5\u51B5"
+      ]
+    },
+    {
+      "DataField": "RowNumber",
+      "StandardName": "\u5E8F\u53F7",
+      "Aliases": [
+        "\u5E8F\u53F7",
+        "\u7F16\u53F7",
+        "\u9690\u60A3\u7F16\u53F7",
+        "\u95EE\u9898\u7F16\u53F7"
+      ]
+    },
+    {
+      "DataField": "RecordDate",
+      "StandardName": "\u65E5\u671F",
+      "Aliases": [
+        "\u65E5\u671F",
+        "\u68C0\u67E5\u65E5\u671F",
+        "\u8BB0\u5F55\u65E5\u671F",
+        "\u95EE\u9898\u65E5\u671F",
+        "\u9690\u60A3\u65E5\u671F",
+        "\u6392\u67E5\u65F6\u95F4",
+        "\u6392\u67E5\u65E5\u671F",
+        "\u53D1\u73B0\u65E5\u671F",
+        "\u53D1\u73B0\u65F6\u95F4"
+      ]
+    },
+    {
+      "DataField": "ResponsibleUnit",
+      "StandardName": "\u8D23\u4EFB\u5355\u4F4D",
+      "Aliases": [
+        "\u8D23\u4EFB\u5355\u4F4D",
+        "\u6240\u5C5E\u5355\u4F4D",
+        "\u8D1F\u8D23\u5355\u4F4D",
+        "\u8D23\u4EFB\u90E8\u95E8",
+        "\u961F\u4F0D\u540D\u79F0",
+        "\u5206\u5305\u5355\u4F4D",
+        "\u5206\u5305\u961F\u4F0D"
+      ]
+    },
+    {
+      "DataField": "ResponsiblePerson",
+      "StandardName": "\u8D23\u4EFB\u4EBA",
+      "Aliases": [
+        "\u8D23\u4EFB\u4EBA",
+        "\u8D1F\u8D23\u4EBA",
+        "\u8D23\u4EFB\u4EBA\u5458",
+        "\u6574\u6539\u8D23\u4EFB\u4EBA",
+        "\u6574\u6539\u4EBA",
+        "\u6574\u6539\u4EBA\u5458"
+      ]
+    },
+    {
+      "DataField": "Location",
+      "StandardName": "\u9690\u60A3\u4F4D\u7F6E",
+      "Aliases": [
+        "\u9690\u60A3\u4F4D\u7F6E",
+        "\u9690\u60A3\u533A\u57DF",
+        "\u9690\u60A3\u90E8\u4F4D",
+        "\u533A\u57DF\u4F4D\u7F6E",
+        "\u9690\u60A3\u5B58\u5728\u533A\u57DF",
+        "\u9690\u60A3\u5B58\u5728\u90E8\u4F4D",
+        "\u9690\u60A3\u5B58\u5728\u7684\u533A\u57DF",
+        "\u9690\u60A3\u5B58\u5728\u7684\u90E8\u4F4D",
+        "\u9690\u60A3\u5B58\u5728\u7684\u533A\u57DF\u6216\u90E8\u4F4D"
+      ]
+    },
+    {
+      "DataField": "HazardType",
+      "StandardName": "\u9690\u60A3\u7C7B\u578B",
+      "Aliases": [
+        "\u9690\u60A3\u7C7B\u578B",
+        "\u98CE\u9669\u7C7B\u578B",
+        "\u9690\u60A3\u7C7B\u522B",
+        "\u7C7B\u522B"
+      ]
+    },
+    {
+      "DataField": "HazardLevel",
+      "StandardName": "\u7EA7\u522B",
+      "Aliases": [
+        "\u7EA7\u522B",
+        "\u9690\u60A3\u7B49\u7EA7",
+        "\u98CE\u9669\u7B49\u7EA7",
+        "\u9690\u60A3\u5206\u7EA7"
+      ]
+    },
+    {
+      "DataField": "Deadline",
+      "StandardName": "\u6574\u6539\u671F\u9650",
+      "Aliases": [
+        "\u6574\u6539\u671F\u9650",
+        "\u6CBB\u7406\u671F\u9650",
+        "\u6574\u6539\u65F6\u9650",
+        "\u5B8C\u6210\u671F\u9650"
+      ]
+    },
+    {
+      "DataField": "CompletedDate",
+      "StandardName": "\u5B8C\u6210\u65E5\u671F",
+      "Aliases": [
+        "\u5B8C\u6210\u65E5\u671F",
+        "\u5B8C\u6210\u65F6\u95F4",
+        "\u6574\u6539\u5B8C\u6210\u65E5\u671F",
+        "\u6574\u6539\u65F6\u95F4",
+        "\u6574\u6539\u5B8C\u6210\u65F6\u95F4",
+        "\u590D\u67E5\u65F6\u95F4",
+        "\u590D\u67E5\u65E5\u671F"
+      ]
+    },
+    {
+      "DataField": "Reviewer",
+      "StandardName": "\u590D\u67E5\u4EBA",
+      "Aliases": [
+        "\u590D\u67E5\u4EBA",
+        "\u590D\u67E5\u4EBA\u5458",
+        "\u9A8C\u6536\u4EBA",
+        "\u9A8C\u6536\u4EBA\u5458",
+        "\u590D\u6838\u4EBA",
+        "\u590D\u6838\u4EBA\u5458",
+        "\u6392\u67E5\u4EBA",
+        "\u6392\u67E5\u4EBA\u5458",
+        "\u76D1\u7763\u4EBA\u5458",
+        "\u76D1\u7763\u6574\u6539\u4EBA\u5458",
+        "\u76D1\u7763\u8D23\u4EFB\u4EBA"
+      ]
+    },
+    {
+      "DataField": "Description",
+      "StandardName": "\u9690\u60A3\u63CF\u8FF0",
+      "Aliases": [
+        "\u9690\u60A3\u63CF\u8FF0",
+        "\u95EE\u9898\u63CF\u8FF0",
+        "\u9690\u60A3\u60C5\u51B5",
+        "\u9690\u60A3\u5185\u5BB9",
+        "\u5B58\u5728\u95EE\u9898",
+        "\u95EE\u9898\u60C5\u51B5",
+        "\u9690\u60A3\u95EE\u9898\u63CF\u8FF0",
+        "\u9690\u60A3\u72B6\u6001\u63CF\u8FF0",
+        "\u9690\u60A3\u60C5\u51B5\u63CF\u8FF0",
+        "\u9690\u60A3\u540D\u79F0",
+        "\u9690\u60A3\u63AA\u65BD"
+      ]
+    },
+    {
+      "DataField": "Measure",
+      "StandardName": "\u6574\u6539\u63AA\u65BD",
+      "Aliases": [
+        "\u6574\u6539\u63AA\u65BD",
+        "\u4E3B\u8981\u6574\u6539\u63AA\u65BD",
+        "\u6CBB\u7406\u63AA\u65BD",
+        "\u4E3B\u8981\u6CBB\u7406\u63AA\u65BD",
+        "\u6574\u6539\u8981\u6C42",
+        "\u5904\u7406\u63AA\u65BD",
+        "\u6574\u6539\u60C5\u51B5",
+        "\u6574\u6539\u56DE\u590D",
+        "\u56DE\u590D\u63CF\u8FF0"
+      ]
+    },
+    {
+      "DataField": "HazardPhoto",
+      "StandardName": "\u9690\u60A3\u7167\u7247",
+      "Aliases": [
+        "\u9690\u60A3\u7167\u7247",
+        "\u9690\u60A3\u56FE\u7247",
+        "\u95EE\u9898\u7167\u7247",
+        "\u95EE\u9898\u56FE\u7247",
+        "\u6574\u6539\u524D\u7167\u7247",
+        "\u6574\u6539\u524D\u56FE\u7247"
+      ]
+    },
+    {
+      "DataField": "RemedyPhoto",
+      "StandardName": "\u6574\u6539\u7167\u7247",
+      "Aliases": [
+        "\u6574\u6539\u7167\u7247",
+        "\u6574\u6539\u524D\u7167\u7247",
+        "\u6574\u6539\u540E\u7167\u7247",
+        "\u6574\u6539\u56FE\u7247",
+        "\u6574\u6539\u524D\u56FE\u7247",
+        "\u6574\u6539\u540E\u56FE\u7247",
+        "\u5B8C\u6210\u7167\u7247",
+        "\u6574\u6539\u5B8C\u6210\u7167\u7247"
+      ]
+    },
+    {
+      "DataField": "Title",
+      "StandardName": "\u59D3\u540D",
+      "Aliases": [
+        "\u59D3\u540D",
+        "\u540D\u5B57",
+        "\u4EBA\u5458\u59D3\u540D"
+      ]
+    },
+    {
+      "DataField": "Gender",
+      "StandardName": "\u6027\u522B",
+      "Aliases": [
+        "\u6027\u522B"
+      ]
+    },
+    {
+      "DataField": "Age",
+      "StandardName": "\u5E74\u9F84",
+      "Aliases": [
+        "\u5E74\u9F84"
+      ]
+    },
+    {
+      "DataField": "Department",
+      "StandardName": "\u90E8\u95E8",
+      "Aliases": [
+        "\u90E8\u95E8",
+        "\u73ED\u7EC4",
+        "\u65BD\u5DE5\u73ED\u7EC4",
+        "\u4F5C\u4E1A\u73ED\u7EC4",
+        "\u961F\u7EC4"
+      ]
+    },
+    {
+      "DataField": "Position",
+      "StandardName": "\u5C97\u4F4D",
+      "Aliases": [
+        "\u5C97\u4F4D",
+        "\u5DE5\u79CD",
+        "\u5C97\u4F4D\u5DE5\u79CD",
+        "\u5C97\u4F4D/\u5DE5\u79CD",
+        "\u5C97\u4F4D\u6216\u5DE5\u79CD",
+        "\u804C\u52A1",
+        "\u804C\u52A1/\u5DE5\u79CD",
+        "\u804C\u52A1/\u5C97\u4F4D",
+        "\u804C\u52A1\u6216\u5C97\u4F4D"
+      ]
+    },
+    {
+      "DataField": "Unit",
+      "StandardName": "\u5355\u4F4D",
+      "Aliases": [
+        "\u5355\u4F4D",
+        "\u5355\u4F4D\u540D\u79F0",
+        "\u516C\u53F8",
+        "\u516C\u53F8\u540D\u79F0",
+        "\u65BD\u5DE5\u5355\u4F4D",
+        "\u5206\u5305\u961F\u4F0D",
+        "\u5206\u5305\u5355\u4F4D",
+        "\u534F\u4F5C\u961F\u4F0D",
+        "\u534F\u4F5C\u5355\u4F4D",
+        "\u65BD\u5DE5\u961F",
+        "\u65BD\u5DE5\u961F\u4F0D"
+      ]
+    },
+    {
+      "DataField": "BirthDate",
+      "StandardName": "\u51FA\u751F\u5E74\u6708",
+      "Aliases": [
+        "\u51FA\u751F\u5E74\u6708",
+        "\u51FA\u751F\u65E5\u671F",
+        "\u51FA\u751F\u65F6\u95F4"
+      ]
+    },
+    {
+      "DataField": "EmployeeID",
+      "StandardName": "\u5DE5\u53F7",
+      "Aliases": [
+        "\u5DE5\u53F7",
+        "\u5458\u5DE5\u7F16\u53F7",
+        "\u5458\u5DE5\u53F7"
+      ]
+    },
+    {
+      "DataField": "NativePlace",
+      "StandardName": "\u7C4D\u8D2F",
+      "Aliases": [
+        "\u7C4D\u8D2F"
+      ]
+    },
+    {
+      "DataField": "EducationLevel",
+      "StandardName": "\u6587\u5316\u7A0B\u5EA6",
+      "Aliases": [
+        "\u6587\u5316\u7A0B\u5EA6",
+        "\u5B66\u5386",
+        "\u6559\u80B2\u7A0B\u5EA6"
+      ]
+    },
+    {
+      "DataField": "PhoneNumber",
+      "StandardName": "\u624B\u673A\u53F7",
+      "Aliases": [
+        "\u624B\u673A\u53F7",
+        "\u624B\u673A\u53F7\u7801",
+        "\u8054\u7CFB\u7535\u8BDD",
+        "\u8054\u7CFB\u65B9\u5F0F",
+        "\u7535\u8BDD"
+      ]
+    },
+    {
+      "DataField": "EntryTime",
+      "StandardName": "\u5165\u573A\u6559\u80B2\u65F6\u95F4",
+      "Aliases": [
+        "\u5165\u573A\u6559\u80B2\u65F6\u95F4",
+        "\u5165\u573A\u65F6\u95F4",
+        "\u8FDB\u573A\u65F6\u95F4",
+        "\u6559\u80B2\u65F6\u95F4",
+        "\u5165\u573A\u6559\u80B2",
+        "\u4E09\u7EA7\u6559\u80B2\u65F6\u95F4"
+      ]
+    },
+    {
+      "DataField": "EduTime",
+      "StandardName": "\u6559\u80B2\u65F6\u95F4",
+      "Aliases": [
+        "\u6559\u80B2\u65F6\u95F4",
+        "\u4E09\u7EA7\u6559\u80B2\u65F6\u95F4",
+        "\u57F9\u8BAD\u65F6\u95F4"
+      ]
+    },
+    {
+      "DataField": "ExitTime",
+      "StandardName": "\u9000\u573A\u65F6\u95F4",
+      "Aliases": [
+        "\u9000\u573A\u65F6\u95F4",
+        "\u51FA\u573A\u65F6\u95F4",
+        "\u79BB\u573A\u65F6\u95F4",
+        "\u79BB\u573A\u65E5\u671F",
+        "\u9000\u573A\u65E5\u671F"
+      ]
+    },
+    {
+      "DataField": "IDCardDocNumber",
+      "StandardName": "\u8EAB\u4EFD\u8BC1\u53F7",
+      "Aliases": [
+        "\u8EAB\u4EFD\u8BC1\u53F7",
+        "\u8EAB\u4EFD\u8BC1\u53F7\u7801",
+        "\u8BC1\u4EF6\u53F7\u7801",
+        "\u8EAB\u4EFD\u8BC1"
+      ]
+    },
+    {
+      "DataField": "IDCardValidPeriod",
+      "StandardName": "\u8EAB\u4EFD\u8BC1\u6709\u6548\u671F",
+      "Aliases": [
+        "\u8EAB\u4EFD\u8BC1\u6709\u6548\u671F",
+        "\u8BC1\u4EF6\u6709\u6548\u671F"
+      ]
+    },
+    {
+      "DataField": "ThreeCategoryPersonnelDisplay",
+      "StandardName": "\u4E09\u7C7B\u4EBA\u5458",
+      "Aliases": [
+        "\u4E09\u7C7B\u4EBA\u5458",
+        "\u4E09\u7C7B"
+      ]
+    },
+    {
+      "DataField": "SpecialOperationsPersonnelDisplay",
+      "StandardName": "\u7279\u79CD\u4F5C\u4E1A",
+      "Aliases": [
+        "\u7279\u79CD\u4F5C\u4E1A",
+        "\u7279\u79CD\u4F5C\u4E1A\u4EBA\u5458"
+      ]
+    },
+    {
+      "DataField": "CertName",
+      "StandardName": "\u8BC1\u4E66\u540D\u79F0",
+      "Aliases": [
+        "\u8BC1\u4E66\u540D\u79F0",
+        "\u8BC1\u4E66\u540D"
+      ]
+    },
+    {
+      "DataField": "CertNumber",
+      "StandardName": "\u8BC1\u4E66\u7F16\u53F7",
+      "Aliases": [
+        "\u8BC1\u4E66\u7F16\u53F7",
+        "\u8BC1\u4E66\u53F7"
+      ]
+    },
+    {
+      "DataField": "CertValidPeriod",
+      "StandardName": "\u8BC1\u4E66\u6709\u6548\u671F",
+      "Aliases": [
+        "\u8BC1\u4E66\u6709\u6548\u671F",
+        "\u8BC1\u6709\u6548\u671F"
+      ]
+    },
+    {
+      "DataField": "Remark",
+      "StandardName": "\u5907\u6CE8",
+      "Aliases": [
+        "\u5907\u6CE8",
+        "\u8BF4\u660E",
+        "\u5907\u6CE8\u8BF4\u660E"
+      ]
+    }
+  ],
+  "CommonSynonyms": {
+    "\u9690\u60A3": [
+      "\u98CE\u9669",
+      "\u95EE\u9898",
+      "\u7F3A\u9677"
+    ],
+    "\u6574\u6539": [
+      "\u6CBB\u7406",
+      "\u5904\u7406",
+      "\u7EA0\u6B63"
+    ],
+    "\u5165\u573A": [
+      "\u8FDB\u573A",
+      "\u5165\u573A"
+    ],
+    "\u5C97\u4F4D": [
+      "\u5DE5\u79CD"
+    ]
+  }
+}

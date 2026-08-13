@@ -1,0 +1,7 @@
+<UserControl x:Class="MS_SafetyManagementSystem.Peoplemanagement.PersonnelWorkArea"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Content 由代码动态切换，不在 XAML 中预设默认视图 -->
+    <Grid/>
+</UserControl>

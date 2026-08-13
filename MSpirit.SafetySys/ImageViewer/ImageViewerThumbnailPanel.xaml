@@ -1,0 +1,76 @@
+<UserControl x:Class="MS_SafetyManagementSystem.ImageViewer.ImageViewerThumbnailPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="60" d:DesignWidth="400"
+             Focusable="False"
+             IsHitTestVisible="True">
+    <UserControl.Resources>
+        <Style TargetType="Border" x:Key="ThumbnailItemStyle">
+            <Setter Property="Height" Value="58"/>
+            <Setter Property="Width" Value="54"/>
+            <Setter Property="Margin" Value="1,2"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="IsHitTestVisible" Value="True"/>
+        </Style>
+    </UserControl.Resources>
+
+    <!-- ScrollViewer 替代 Border+ClipToBounds+TranslateTransform：
+         用 WPF 原生滚动机制管理视口，解决裁剪区外 Image.Source 赋值后不渲染的问题。
+         IsDeferredScrollingEnabled=False 确保即时跳转，配合平滑动画实现丝滑滚动。 -->
+    <ScrollViewer x:Name="PART_ScrollViewer"
+                  HorizontalScrollBarVisibility="Hidden"
+                  VerticalScrollBarVisibility="Disabled"
+                  CanContentScroll="False"
+                  IsDeferredScrollingEnabled="False"
+                  PanningMode="None"
+                  Background="Transparent"
+                  VerticalAlignment="Stretch"
+                  Focusable="False"
+                  IsHitTestVisible="True">
+        <ItemsControl x:Name="PART_ItemsControl"
+                      HorizontalAlignment="Left"
+                      VerticalAlignment="Center"
+                      IsHitTestVisible="True">
+            <ItemsControl.RenderTransform>
+                <TranslateTransform x:Name="PART_ItemsTranslate" X="0" Y="0"/>
+            </ItemsControl.RenderTransform>
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                IsHitTestVisible="True"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border x:Name="ItemBorder"
+                            Style="{StaticResource ThumbnailItemStyle}"
+                            Tag="{Binding Index}"
+                            PreviewMouseLeftButtonDown="ThumbnailItem_PreviewMouseLeftButtonDown"
+                            PreviewMouseLeftButtonUp="ThumbnailItem_PreviewMouseLeftButtonUp"
+                            IsHitTestVisible="True">
+                        <Image Source="{Binding Image}"
+                               Stretch="Uniform"
+                               RenderOptions.BitmapScalingMode="LowQuality"
+                               Height="39"
+                               VerticalAlignment="Center"
+                               IsHitTestVisible="True"/>
+                    </Border>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                            <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#378ADD"/>
+                            <Setter TargetName="ItemBorder" Property="BorderThickness" Value="2"/>
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </ScrollViewer>
+</UserControl>

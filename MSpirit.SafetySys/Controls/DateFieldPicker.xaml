@@ -1,0 +1,47 @@
+<UserControl x:Class="MS_SafetyManagementSystem.Controls.DateFieldPicker"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:MS_SafetyManagementSystem.Controls"
+             TextOptions.TextFormattingMode="Display">
+
+    <UserControl.Resources>
+    </UserControl.Resources>
+
+    <Grid>
+        <Border x:Name="RootBorder"
+                BorderBrush="#CCFFFFFF" BorderThickness="1" CornerRadius="6"
+                Background="#80FAFAFA" Height="35" Width="120"
+                Cursor="Hand"
+                PreviewMouseLeftButtonDown="RootBorder_PreviewMouseLeftButtonDown">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="DateTextBox" Grid.Column="0" FontSize="11pt"
+                         Text="{Binding SelectedDate, RelativeSource={RelativeSource AncestorType=UserControl}, StringFormat='MM-dd', UpdateSourceTrigger=PropertyChanged, FallbackValue=''}"
+                         BorderThickness="0" Background="Transparent"
+                         VerticalContentAlignment="Center" Padding="3,0"
+                         IsReadOnly="True" Cursor="Hand"
+                         ToolTip="点击选择日期"
+                         Focusable="False"
+                         PreviewMouseRightButtonDown="DateTextBox_PreviewMouseRightButtonDown"/>
+                <controls:ArrowToggleButton x:Name="DateToggleButton" Grid.Column="1"
+                                            Direction="Down"
+                                            VerticalAlignment="Center" Margin="0,0,4,0"
+                                            Focusable="False"/>
+            </Grid>
+        </Border>
+
+        <Popup x:Name="DatePopup"
+               StaysOpen="True"
+               AllowsTransparency="True"
+               Placement="Bottom"
+               PlacementTarget="{Binding ElementName=RootBorder}"
+               PopupAnimation="Slide">
+            <controls:CustomCalendarPopup x:Name="DateCalendar"
+                                          SelectedDate="{Binding SelectedDate, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                          DateSelected="OnCalendarDateSelected"/>
+        </Popup>
+    </Grid>
+</UserControl>

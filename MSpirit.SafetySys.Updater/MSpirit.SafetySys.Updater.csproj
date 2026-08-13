@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 斜月安全管理系统 · 绿色版更新器
+       职责：定位程序文件夹（MSpirit.SafetySys.exe 所在目录），解压 .msupd 更新包并按清单对账替换文件。
+       发布：NativeAOT 单文件 exe（无需 .NET 运行时，体积约 2MB）。
+       产物文件名：Updater.exe（用户分发时与 .msupd 更新包同目录放置）。 -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.17763.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>false</UseWPF>
+
+    <!-- 产物文件名：Updater.exe -->
+    <AssemblyName>Updater</AssemblyName>
+    <RootNamespace>MSpirit.SafetySys.Updater</RootNamespace>
+    <Product>斜月安全管理系统（个人版）Beta V1.0</Product>
+    <ApplicationIcon>斜月安全管理系统.ico</ApplicationIcon>
+    <Authors>AXin</Authors>
+    <Version>1.0.0.0</Version>
+
+    <!-- NativeAOT：编译成本地机器码，单文件、零运行时依赖 -->
+    <PublishAot>true</PublishAot>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>full</TrimMode>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <StripSymbols>true</StripSymbols>
+    <!-- 输出路径由根目录 Directory.Build.props 统一管理（平铺到根 bin\，无 TFM/RID 子目录） -->
+  </PropertyGroup>
+
+</Project>

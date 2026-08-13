@@ -1,0 +1,93 @@
+<ui:FluentWindow x:Class="MS_SafetyManagementSystem.Views.PersonnelCardOrder"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:controls="clr-namespace:MS_SafetyManagementSystem.Controls"
+                 Title="人员记录卡排序"
+                 Width="1000" Height="800"
+                 MinWidth="800" MinHeight="600"
+                 WindowStartupLocation="CenterOwner"
+                 ResizeMode="CanResizeWithGrip"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 全局标题栏 -->
+        <controls:WindowTitleBar Grid.Row="0"
+                                 Icon="pack://application:,,,/Resources/斜月安全管理系统256.png"
+                                 Title="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}"
+                                 ShowMinimizeButton="False"
+                                 ShowMaximizeButton="False"/>
+
+        <!-- 主内容区（左侧按钮 + 右侧列表） -->
+        <Grid Grid.Row="1" Margin="15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 左侧按钮区 -->
+            <StackPanel Grid.Column="0" Width="100" Margin="0,0,15,0">
+                <Button Content="置顶" Style="{StaticResource SidePanelButtonStyle}" Click="TopButton_Click"/>
+                <Button Content="上移" Style="{StaticResource SidePanelButtonStyle}" Click="UpButton_Click"/>
+                <Button Content="下移" Style="{StaticResource SidePanelButtonStyle}" Click="DownButton_Click"/>
+                <Button Content="置底" Style="{StaticResource SidePanelButtonStyle}" Click="BottomButton_Click"/>
+                <Separator Margin="0,5" Background="#CCCCCC"/>
+                <Button Content="确认排序" Style="{StaticResource SidePanelButtonStyle}" Click="ConfirmButton_Click"/>
+                <Button Content="关闭" Style="{StaticResource SidePanelButtonStyle}" Click="CloseButton_Click"/>
+            </StackPanel>
+
+            <!-- 右侧人员记录列表 -->
+            <DataGrid x:Name="RecordsDataGrid"
+                      Grid.Column="1"
+                      Style="{StaticResource DataGridStyle}"
+                      RowHeight="35"
+                      AutoGenerateColumns="False"
+                      CanUserSortColumns="False"
+                      SelectionMode="Single"
+                      LoadingRow="RecordsDataGrid_LoadingRow">
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRowStyle}">
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                    </Style>
+                </DataGrid.RowStyle>
+                <DataGrid.CellStyle>
+                    <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCellStyle}">
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                    </Style>
+                </DataGrid.CellStyle>
+                <DataGrid.Resources>
+                    <Style x:Key="CellTextStyle" TargetType="TextBlock">
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                    </Style>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="序号" Width="*" Binding="{Binding DisplayIndex}">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="姓名" Width="2*" Binding="{Binding Title}" ElementStyle="{StaticResource CellTextStyle}"/>
+                    <DataGridTextColumn Header="性别" Width="*" Binding="{Binding Gender}" ElementStyle="{StaticResource CellTextStyle}"/>
+                    <DataGridTextColumn Header="年龄" Width="*" Binding="{Binding Age}" ElementStyle="{StaticResource CellTextStyle}"/>
+                    <DataGridTextColumn Header="岗位" Width="2*" Binding="{Binding Position}" ElementStyle="{StaticResource CellTextStyle}"/>
+                    <DataGridTextColumn Header="入场时间" Width="2*" Binding="{Binding EntryTime}" ElementStyle="{StaticResource CellTextStyle}"/>
+                    <DataGridTextColumn Header="退场时间" Width="2*" Binding="{Binding ExitTime}" ElementStyle="{StaticResource CellTextStyle}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

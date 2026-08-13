@@ -1,0 +1,138 @@
+﻿<ui:FluentWindow x:Class="MS_SafetyManagementSystem.Views.HazardGroupDialog"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:controls="clr-namespace:MS_SafetyManagementSystem.Controls"
+                 xmlns:local="clr-namespace:MS_SafetyManagementSystem.ViewModels"
+                 Title="隐患管理模块 - 创建分组"
+                 Width="450" SizeToContent="Height"
+                 MinWidth="400" MinHeight="100"
+                 WindowStartupLocation="CenterOwner"
+                 ResizeMode="NoResize"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round">
+
+    <ui:FluentWindow.InputBindings>
+        <KeyBinding Key="Escape" Command="{Binding CancelCommand}"/>
+    </ui:FluentWindow.InputBindings>
+
+    <ui:FluentWindow.Resources>
+        <local:BooleanToBrushConverter x:Key="BooleanToBrushConverter" />
+        <SolidColorBrush x:Key="SelectedBrush" Color="#CC5C89FF" />
+
+        <!-- 月份按钮样式 -->
+        <Style x:Key="MonthButtonNormalStyle" TargetType="Button">
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#B0B0B0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#AED0EE"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF48AFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <Setter Property="Background" Value="{StaticResource SelectedBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="MonthButtonExistsStyle" TargetType="Button" BasedOn="{StaticResource MonthButtonNormalStyle}">
+            <Setter Property="Background" Value="#CCD0E6F5"/>
+            <Setter Property="BorderBrush" Value="#CC2B7A9B"/>
+            <Setter Property="ToolTip" Value="该月份已存在分组，请选择其他月份"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <Setter Property="Background" Value="{StaticResource SelectedBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <local:ExistsButtonStyleConverter x:Key="ExistsStyleConverter"
+                                          ExistsStyle="{StaticResource MonthButtonExistsStyle}"
+                                          NormalStyle="{StaticResource MonthButtonNormalStyle}"/>
+    </ui:FluentWindow.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <controls:WindowTitleBar Grid.Row="0"
+                                 Icon="pack://application:,,,/Resources/FoolMoon.png"
+                                 Title="隐患管理模块 - 创建分组"
+                                 ShowMinimizeButton="False"
+                                 ShowMaximizeButton="False"/>
+
+        <!-- 内容区域 -->
+        <Grid Grid.Row="1" Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- 年份选择器 -->
+            <Grid Grid.Row="0" Margin="0,0,0,15">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Content="◀" Width="40" Height="30" Command="{Binding PrevYearCommand}" Cursor="Hand"/>
+                <TextBlock Grid.Column="1" Text="{Binding YearText}" FontSize="16" FontWeight="Bold"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Button Grid.Column="2" Content="▶" Width="40" Height="30" Command="{Binding NextYearCommand}" Cursor="Hand"/>
+            </Grid>
+
+            <!-- 月份矩阵 -->
+            <ItemsControl Grid.Row="1" ItemsSource="{Binding Months}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Rows="4" Columns="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Content="{Binding DisplayName}"
+                                Margin="5"
+                                Command="{Binding DataContext.SelectMonthCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                CommandParameter="{Binding MonthNumber}"
+                                Style="{Binding IsExists, Converter={StaticResource ExistsStyleConverter}}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- 错误提示和取消按钮 -->
+            <Grid Grid.Row="3" Margin="0,10,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding ErrorMessage}" Foreground="Red" 
+                           HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Content="取消" Style="{StaticResource DialogButtonStyle}"
+                        Command="{Binding CancelCommand}" Margin="0,0,10,0" IsCancel="True"/>
+            </Grid>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

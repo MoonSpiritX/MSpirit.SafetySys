@@ -1,0 +1,70 @@
+<UserControl x:Class="MS_SafetyManagementSystem.Peoplemanagement.PersonnelPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:people="clr-namespace:MS_SafetyManagementSystem.Peoplemanagement">
+
+    <UserControl.Resources>
+        <Style x:Key="GlassGridSplitterStyle" TargetType="GridSplitter">
+            <Setter Property="Width" Value="3"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="Background" Value="#7FC3C3C3"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush">
+                <Setter.Value>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#CCF7F7F7" Offset="0"/>
+                        <GradientStop Color="#CCF7F7F7" Offset="1"/>
+                    </LinearGradientBrush>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="4" ShadowDepth="0" Opacity="0.1" Color="Black"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Cursor" Value="SizeWE"/>
+            <Setter Property="ShowsPreview" Value="False"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Background="Transparent">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 功能区 -->
+        <people:PersonnelToolbarControl x:Name="FunctionToolbar" Grid.Row="0"/>
+
+        <!-- 分组列表 + 记录显示区 -->
+        <Grid x:Name="MainContentGrid" Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200" MinWidth="200" MaxWidth="300"/>
+                <ColumnDefinition Width="5"/>
+                <!-- 右侧列 -->
+                <ColumnDefinition x:Name="RightColumn" Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- 左侧：分组列表区 -->
+            <people:PersonnelGroupTreePanel x:Name="TreePanel" Grid.Column="0"/>
+
+            <GridSplitter Grid.Column="1" Style="{StaticResource GlassGridSplitterStyle}" ResizeBehavior="BasedOnAlignment"/>
+
+            <!-- 右侧：记录显示区 -->
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Border Grid.Row="0" Background="Transparent" Height="30">
+                    <TextBlock x:Name="StatusTextBlock" Text="【人员记录显示区】" Foreground="#333" 
+                               FontFamily="Microsoft YaHei" FontSize="10pt" 
+                               HorizontalAlignment="Center" VerticalAlignment="Center" 
+                               TextTrimming="CharacterEllipsis"/>
+                </Border>
+                <people:PersonnelWorkArea x:Name="WorkArea" Grid.Row="1"/>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>
