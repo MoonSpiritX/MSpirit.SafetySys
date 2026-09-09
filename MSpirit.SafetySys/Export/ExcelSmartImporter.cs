@@ -61,7 +61,7 @@ namespace MS_SafetyManagementSystem.Export
                 var headerRow = FindHeaderRow(worksheet);
                 if (headerRow == null)
                 {
-                    result.Warnings.Add("未在表格中找到有效的表头行（至少匹配两个字段）");
+                    result.Warnings.Add("未在表格中检测到有效的表头行（文档内容至少需两个字段）");
                     return result;
                 }
 
@@ -232,7 +232,12 @@ namespace MS_SafetyManagementSystem.Export
         }
 
         /// <summary>
-        /// 查找数据区域的最后一行（遇到空行或底部说明行停止）
+        /// 查找数据区域的最后一行。
+        /// 规则（2026-08-14 修复：数据行优先，避免数据单元格以"日期/审核/注："等
+        /// 底部关键词开头时被误判为底部说明行而截断）：
+        ///  - 行内任一映射列（序号列除外，序号仅是占位不算数据）有文本或嵌入图片 → 数据行，继续扫描；
+        ///  - 非数据行且行内有任何内容（底部说明行、落款、非映射列内容等）→ 结构边界，停止读取；
+        ///  - 完全空行 → 跳过。
         /// </summary>
         private int FindLastDataRow(IXLWorksheet worksheet, int startRow, Dictionary<int, string> columnMapping, Dictionary<string, List<byte[]>> embeddedImages)
         {
@@ -251,27 +256,12 @@ namespace MS_SafetyManagementSystem.Export
                 var row = worksheet.Row(r);
                 var usedCells = row.CellsUsed().ToList();
 
-                if (usedCells.Count > 0)
-                {
-                    bool isBottom = false;
-                    foreach (var cell in usedCells)
-                    {
-                        string text = cell.GetString().Trim();
-                        if (text.StartsWith("填表") || text.StartsWith("审核") || text.StartsWith("日期") ||
-                            text.StartsWith("注：") || text.StartsWith("编制") || text.StartsWith("审批") ||
-                            text.Contains("建设单位负责人") || text.Contains("监理单位负责人") ||
-                            text.Contains("施工单位负责人") || text.Contains("单位负责人"))
-                        {
-                            isBottom = true;
-                            break;
-                        }
-                    }
-                    if (isBottom) break;
-                }
-
+                // 数据行判定：任一映射列（排除序号列）有文本或嵌入图片
                 bool hasData = false;
                 foreach (var col in columnMapping.Keys)
                 {
+                    if (columnMapping[col] == "RowNumber")
+                        continue;
                     if (!string.IsNullOrWhiteSpace(row.Cell(col).GetString()))
                     {
                         hasData = true;
@@ -286,10 +276,15 @@ namespace MS_SafetyManagementSystem.Export
                 }
 
                 if (hasData)
+                {
                     lastDataRow = r;
-                else if (usedCells.Count > 0)
-                    break; // 有内容但不在映射列，视为结构边界（如底部说明行）
+                    continue;
+                }
+
+                // 非数据行：行内有内容（底部说明行/落款/非映射列内容）→ 结构边界，停止读取
                 // 完全空行直接跳过，避免中间空行截断数据
+                if (usedCells.Count > 0)
+                    break;
             }
             return lastDataRow;
         }

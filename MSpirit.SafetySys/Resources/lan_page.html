@@ -136,6 +136,14 @@ function checkServer() {
 checkServer();
 setInterval(checkServer, 3000);
 
+// 页面关闭时通知服务端"设备离开"：服务端立即从"已连接设备"中移除（无需等心跳超时）。
+// sendBeacon 在页面卸载瞬间可靠送达；若失败（浏览器被强杀等），服务端仍有心跳超时兜底。
+window.addEventListener('pagehide', function () {
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon('/bye?token=' + encodeURIComponent(token));
+  }
+});
+
 // ==================== 加载部门列表 ====================
 var deptSelect = document.getElementById('deptSelect');
 

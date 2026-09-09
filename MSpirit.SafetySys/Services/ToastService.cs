@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 AXin（斜月Spirit）
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using System;
@@ -38,6 +38,8 @@ namespace MS_SafetyManagementSystem.Services
                 FontSize = 13,
                 FontFamily = new FontFamily("Microsoft YaHei"),
                 TextAlignment = TextAlignment.Center,
+                TextWrapping = TextWrapping.Wrap,   // 长文案自动换行（2026-08-16：LAN 诊断提示为多行内容）
+                MaxWidth = 400,                     // 换行上限，避免整屏横贯
                 VerticalAlignment = VerticalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Center
             };
@@ -54,28 +56,17 @@ namespace MS_SafetyManagementSystem.Services
                 IsHitTestVisible = false
             };
 
-            // 测量尺寸用于偏移计算
-            border.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            border.Arrange(new Rect(border.DesiredSize));
-            double toastWidth = border.DesiredSize.Width;
-            double toastHeight = border.DesiredSize.Height;
-
-            // 计算目标元素的中心点（屏幕坐标）
-            var targetTopLeft = targetElement.PointToScreen(new Point(0, 0));
-            double targetWidth = targetElement.RenderSize.Width;
-            double targetHeight = targetElement.RenderSize.Height;
-            double centerX = targetTopLeft.X + targetWidth / 2;
-            double centerY = targetTopLeft.Y + targetHeight / 2;
-
-            // 创建 Popup
+            // 创建 Popup：由 WPF 原生居中于目标元素（PlacementMode.Center + PlacementTarget）。
+            // 2026-08-16 修复：此前手工计算中心（PointToScreen + RenderSize/2）存在坐标双重偏移——
+            // 偏移量正比于窗口屏幕位置（窗口越靠右下，Toast 越偏右下）；且手工换算在非 100% DPI /
+            // FluentWindow 自定义标题栏下都会出错。改用框架原生居中，全部由 WPF 处理（含 DPI）。
             _currentPopup = new Popup
             {
                 Child = border,
                 AllowsTransparency = true,
                 StaysOpen = true,
-                Placement = PlacementMode.Absolute,
-                HorizontalOffset = centerX - toastWidth / 2,
-                VerticalOffset = centerY - toastHeight / 2
+                Placement = PlacementMode.Center,
+                PlacementTarget = targetElement
             };
 
             // 初始透明度为 0

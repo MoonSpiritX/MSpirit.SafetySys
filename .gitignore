@@ -18,6 +18,7 @@ nul
 .vs/
 .idea/
 .vscode/
+.dotnet-cli/
 Thumbs.db
 desktop.ini
 
@@ -28,6 +29,7 @@ desktop.ini
 # ===== 非正式 / 工具类（不进 git；正式 Skill 副本在 Skills/ 随仓库分发） =====
 其他文件/
 临时文档/
+文案文档/
 
 # ===== 快捷方式与测试残留 =====
 *.lnk

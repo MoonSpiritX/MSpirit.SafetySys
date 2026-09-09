@@ -21,7 +21,7 @@ All information is used solely for the local features of the software: personnel
 
 ## 4. Where Information Is Stored
 
-- All data is stored locally on your computer under `D:\MSpirit.SafetySys.Date` (when a D: drive exists) or `%LOCALAPPDATA%\MSpirit.SafetySys.Date`.
+- All data is stored locally on your computer under `{drive}\MSpirit.SafetySys.Date` (on the first available non-system fixed drive, e.g. D:\, E:\...) or `%LOCALAPPDATA%\MSpirit.SafetySys.Date` (fallback when no such drive exists).
 - Data is stored in local SQLite databases and attachment files (photos, documents).
 - **No built-in encryption**: data is stored in plaintext. If your data is highly sensitive, we recommend enabling OS-level disk encryption (e.g., BitLocker) on your computer.
 
@@ -84,7 +84,7 @@ All information is used solely for the local features of the software: personnel
 
 ## 4. 信息的存储
 
-- 所有数据存储在您电脑本地：`D:\MSpirit.SafetySys.Date`（存在 D 盘时）或 `%LOCALAPPDATA%\MSpirit.SafetySys.Date`。
+- 所有数据存储在您电脑本地：`{盘根}\MSpirit.SafetySys.Date`（第一个可用的非系统固定盘，如 D:\、E:\）或 `%LOCALAPPDATA%\MSpirit.SafetySys.Date`（无可用非系统固定盘时兜底）。
 - 数据以本地 SQLite 数据库与附件文件（照片、文档）形式存储。
 - **无内置加密**：数据以明文存储。如数据较为敏感，建议在电脑上启用系统级磁盘加密（如 BitLocker）。
 

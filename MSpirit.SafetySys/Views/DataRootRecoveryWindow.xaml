@@ -1,0 +1,79 @@
+<ui:FluentWindow x:Class="MS_SafetyManagementSystem.Views.DataRootRecoveryWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:controls="clr-namespace:MS_SafetyManagementSystem.Controls"
+                 Title="数据目录未找到"
+                 Width="580" SizeToContent="Height"
+                 MinWidth="520" MinHeight="260"
+                 WindowStartupLocation="CenterScreen"
+                 ResizeMode="NoResize"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <controls:WindowTitleBar Grid.Row="0"
+                                 Icon="pack://application:,,,/Resources/FoolMoon.png"
+                                 Title="数据目录未找到"
+                                 ShowMinimizeButton="False"
+                                 ShowMaximizeButton="False"/>
+
+        <Grid Grid.Row="1" Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>  <!-- 提示区 -->
+                <RowDefinition Height="Auto"/>  <!-- 搜索进度区 -->
+                <RowDefinition Height="*"/>     <!-- 搜索结果区 -->
+                <RowDefinition Height="Auto"/>  <!-- 按钮区 -->
+            </Grid.RowDefinitions>
+
+            <!-- 提示区 -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                <TextBlock Text="未找到上次使用的数据目录：" FontSize="11pt" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                <TextBlock x:Name="RecordedRootTextBlock"
+                           FontSize="11pt" Foreground="#C0504D" TextWrapping="Wrap"
+                           Margin="0,4,0,0"/>
+                <TextBlock Text="可能原因：存放数据的磁盘未连接、盘符发生变化，或数据目录被移动。请选择以下方式找回数据："
+                           FontSize="10pt" Foreground="#666666" TextWrapping="Wrap" Margin="0,8,0,0"/>
+            </StackPanel>
+
+            <!-- 搜索进度区（搜索时显示） -->
+            <StackPanel x:Name="SearchProgressPanel" Grid.Row="1" Visibility="Collapsed" Margin="0,0,0,12">
+                <ProgressBar x:Name="SearchProgressBar" Height="6" Minimum="0" Maximum="100"/>
+                <TextBlock x:Name="SearchProgressText" FontSize="10pt" Foreground="#666666" Margin="0,6,0,0"
+                           Text="正在搜索磁盘…"/>
+            </StackPanel>
+
+            <!-- 搜索结果区 -->
+            <Grid Grid.Row="2" x:Name="SearchResultPanel" Visibility="Collapsed" Margin="0,0,0,12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" x:Name="SearchResultTitle" FontSize="10.5pt" FontWeight="SemiBold"
+                           Text="找到以下数据目录，请选择要使用的："/>
+                <ListBox x:Name="SearchResultListBox" Grid.Row="1"
+                         Margin="0,6,0,0" MaxHeight="180"
+                         DisplayMemberPath="Display"/>
+            </Grid>
+
+            <!-- 按钮区 -->
+            <StackPanel x:Name="ActionPanel" Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="BrowseButton" Content="手动选择目录…" Style="{StaticResource DialogButtonStyle}" Click="BrowseButton_Click"/>
+                <Button x:Name="SearchButton" Content="搜索其他位置…" Style="{StaticResource DialogButtonStyle}" Margin="8,0,0,0" Click="SearchButton_Click"/>
+                <Button x:Name="UseNewButton" Content="使用新位置继续" Style="{StaticResource DialogButtonStyle}" Margin="8,0,0,0" Click="UseNewButton_Click"/>
+            </StackPanel>
+
+            <!-- 搜索结果确认按钮 -->
+            <StackPanel x:Name="ResultActionPanel" Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Visibility="Collapsed">
+                <Button x:Name="PickResultButton" Content="使用所选目录" Style="{StaticResource DialogButtonStyle}" Click="PickResultButton_Click"/>
+                <Button x:Name="CancelSearchButton" Content="取消" Style="{StaticResource DialogButtonStyle}" Margin="8,0,0,0" Click="CancelSearchButton_Click"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

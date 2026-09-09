@@ -147,8 +147,8 @@
                     <sysc:TextBlock Text="办公工具"/>
                 </StackPanel>
             </MenuItem.Header>
-            <MenuItem Header="图片处理" Style="{StaticResource SubMenuItemStyle}" Click="OnImageProcess"/>
             <MenuItem Header="手机图片传输" Style="{StaticResource SubMenuItemStyle}" Click="OnPhotoTransfer"/>
+            <MenuItem Header="图片处理" Style="{StaticResource SubMenuItemStyle}" Click="OnImageProcess"/>
         </MenuItem>
 
         <!-- 信息官网 -->

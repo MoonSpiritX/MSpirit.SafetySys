@@ -150,7 +150,7 @@
                                     <TextBlock Style="{StaticResource CopyIconStyle}"/>
                                 </Button>
                             </StackPanel>
-                            <TextBlock Text="  · 职业：建筑行业企业安全管理工程师" FontSize="11pt" Foreground="#1A1A1A"
+                            <TextBlock Text="  · 职业：建筑行业企业安全管理工程师，编程爱好者。" FontSize="11pt" Foreground="#1A1A1A"
                                        Margin="0,4,0,0"/>
 
                             <TextBlock FontSize="11pt" Foreground="#1A1A1A" LineHeight="26"

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -9,12 +9,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <Authors>AXin</Authors>
-    <Product>斜月安全管理系统（个人版 Beta）</Product>
+    <Product>斜月安全管理系统（个人版）</Product>
     <AssemblyName>MSpirit.SafetySys</AssemblyName>
     <AssemblyTitle>斜月安全管理系统</AssemblyTitle>
-    <Version>1.1.0.0</Version>
-    <AssemblyVersion>1.1.0.0</AssemblyVersion>
-    <FileVersion>1.1.0.0</FileVersion>
+    <Version>1.2.0.0</Version>
+    <AssemblyVersion>1.2.0.0</AssemblyVersion>
+    <FileVersion>1.2.0.0</FileVersion>
     <ApplicationIcon>斜月安全管理系统.ico</ApplicationIcon>
     <PackageIcon>MSAI.png</PackageIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -52,17 +52,8 @@
     <Page Remove="..\MSpirit.SafetySys.Launcher\**" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="Controls\FluentPopup.cs" />
-    <Compile Remove="Controls\WindowMaterial.cs" />
-  </ItemGroup>
+  <!-- 半成品代码（FluentPopup/WindowMaterial/备份版 MainWindow）已于 2026-08-14 删除，排除项随文件移除而清理 -->
 
-  <ItemGroup>
-    <!-- 备份文件不参与编译 -->
-    <Compile Remove="MainWindow（备份版本）.xaml" />
-    <Page Remove="MainWindow（备份版本）.xaml" />
-  </ItemGroup>
-	
   <ItemGroup>
     <None Remove="Data\SolarTerms.json" />
     <None Remove="nul" />
@@ -124,7 +115,9 @@
     <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.4" />
     <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.11.0.20250507" />
     <PackageReference Include="QRCoder" Version="1.8.0" />
-    <PackageReference Include="Sdcb.PaddleInference.runtime.win64.mkl" Version="3.3.1" />
+    <!-- 注：runtime 包（含 Paddle 原生库）用独立版本线 3.3.1.x（构建号），与主包 3.3.1 不同步；
+         2026-08-15 修正：原写 3.3.1 不存在，NuGet 静默解析到 3.3.1.70 并报 NU1603 -->
+    <PackageReference Include="Sdcb.PaddleInference.runtime.win64.mkl" Version="3.3.1.70" />
     <PackageReference Include="Sdcb.PaddleOCR" Version="3.3.1" />
     <PackageReference Include="Sdcb.PaddleOCR.Models.Local" Version="3.3.1" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />

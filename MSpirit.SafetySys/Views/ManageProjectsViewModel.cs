@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 AXin（斜月Spirit）
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using System;
@@ -9,6 +9,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MS_SafetyManagementSystem.Services;
+using MS_SafetyManagementSystem.Helpers;
 using MS_SafetyManagementSystem.Views;
 using Serilog;
 
@@ -199,7 +200,7 @@ namespace MS_SafetyManagementSystem.Views
                     Created = s.Created
                 }).ToList();
 
-                string rootPath = new DataPathService().RootPath;
+                string rootPath = AppServiceProvider.GetDataPathService().RootPath;
                 await System.Threading.Tasks.Task.Run(() =>
                     ArchiveService.ExportProjects(rootPath, infos, dlg.FileName));
 

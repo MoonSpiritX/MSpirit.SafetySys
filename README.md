@@ -2,7 +2,7 @@
 
 > **简体中文（Chinese）**：[docs/README.md](docs/README.md)
 
-A local desktop safety management system for safety management in physical-industry enterprises (construction, manufacturing, production, etc.) — daily safety inspection records and personnel management. Currently **Personal Edition Beta V1.0** (version 1.0.0.1).
+A local desktop safety management system for safety management in physical-industry enterprises (construction, manufacturing, production, etc.) — daily safety inspection records and personnel management. Currently **Personal Edition V1.2** (version 1.2.0.0).
 
 ## Features
 
@@ -13,6 +13,7 @@ A local desktop safety management system for safety management in physical-indus
 | Image Viewer (ImageViewer) | Built-in viewer: fullscreen, zoom (Chase engine), rotate/flip, thumbnails, slideshow |
 | Smart Import/Export (Export) | Field-matching import/export based on Word/Excel templates; auto-generates rectification reports and other documents |
 | Statistics & Analysis (Analysis) | Monthly hazard/personnel statistics charts (LiveChartsCore) |
+| Image Processing (ImageProcess) | Image orientation conversion (rotate left/right/180°, flip, EXIF auto-correct) + **Annotate & Crop** (six annotation tools: rectangle/oval/line/arrow/text/mosaic, output together with cropping) |
 | Others | System tray minimize, single-instance protection, seasonal theme backgrounds + solar-term calendar, QR code generation, context-menu shortcuts |
 
 ## Tech Stack
@@ -53,7 +54,7 @@ You can also open `MSpirit.SafetySys.slnx` in Visual Studio and press F5.
 
 ## Data Storage & Backup (Important)
 
-- **Data root**: defaults to `D:\MSpirit.SafetySys.Date` (when the machine has a D: drive); otherwise `%LOCALAPPDATA%\MSpirit.SafetySys.Date`. Adjustable in the startup logic (`Services/DataPathService.cs`).
+- **Data root**: defaults to `{drive}\MSpirit.SafetySys.Date` on the first available non-system fixed drive (alphabetical order D→E→F…); falls back to `%LOCALAPPDATA%\MSpirit.SafetySys.Date` when no such drive exists. The startup flow remembers the last used data root and can guide recovery (manual pick / full-disk search) if it goes missing (e.g. drive unplugged or drive letter changed). See `Services/DataRootLocator.cs`.
 - **Databases**: `master.db` at the data root (project list); each project's data in `ProjectsDate\Project_{id}\data.db`.
 - **Attachments**: `ProjectsDate\Project_{id}\{module}_{yyyy-MM}\Card_{recordId}\`, thumbnails in the `thumb\` subfolder.
 - **Logs**: `logs\debug*.log` next to the program (daily rolling, 7-day retention).
@@ -83,11 +84,13 @@ MS_SafetyManagementSystem/
 
 ## Known Issues
 
-- Some half-finished code is excluded from compilation (`Controls/FluentPopup.cs`, `Controls/WindowMaterial.cs`, and a backup MainWindow); these are "unfinished experiments" kept for reference.
+- Half-finished code (`Controls/FluentPopup.cs`, `Controls/WindowMaterial.cs`, and a backup MainWindow) has been removed (cleaned up on 2026-08-14; the csproj exclusions were removed along with the files).
 - A few files are large (e.g., `ImageViewerWindow.xaml.cs` ~1,500 lines, `MainWindow.xaml.cs` ~1,495 lines).
-- A unit test project now exists (`MSpirit.SafetySys.Tests`, xUnit, 89 tests covering core data-layer logic); historical data may contain a few missing attachment files (see `docs/ISSUES.md`).
+- A unit test project now exists (`MSpirit.SafetySys.Tests`, xUnit, 703 tests covering core data-layer logic, the import/export pipeline (Excel & Word), the data-root locator, the project/archive/backup services, the statistics/analysis view models, and the image crop/annotation tooling); historical data may contain a few missing attachment files (see `docs/ISSUES.md`).
 
 ## Open Source License & Commercial Licensing
+
+> **Current status**: the source code is hosted in the author's **private repository** (not yet publicly released); plans for a public open-source release are pending. The license statements below take effect upon public release.
 
 This project is released under the **GNU Affero General Public License v3.0 (`AGPL-3.0-or-later`)**, copyright AXin (斜月Spirit). The full license text is in the root [`LICENSE`](../LICENSE).
 
@@ -108,5 +111,6 @@ Third-party component licenses are listed in the root [`THIRD-PARTY-NOTICES`](..
 - `docs/ISSUES.md` — Known issues and improvement suggestions (Chinese)
 - `docs/数据架构.md` — Database schema, directory layout, and path rules (Chinese)
 - `docs/用户手册.md` — User manual for everyday use (Chinese)
+- `docs/LAN服务技术文档.md` — LAN services (personnel/hazard phone entry, photo transfer, update IPC) architecture & protocol (Chinese)
 - `docs/开源许可中文参考.md` — Unofficial Simplified Chinese translation of AGPL-3.0 (the English original in the root `LICENSE` governs)
 - `docs/PRIVACY_POLICY.md` — Privacy policy (bilingual, for store submission and open-source release)

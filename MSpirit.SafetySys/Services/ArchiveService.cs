@@ -590,7 +590,7 @@ namespace MS_SafetyManagementSystem.Services
             }
             catch (Exception ex)
             {
-                try { Exec(conn, "DETACH DATABASE src;"); } catch { }
+                try { Exec(conn, "DETACH DATABASE src;"); } catch { Log.Debug("[Archive] 合并失败后清理 DETACH 失败（忽略）"); }
                 Log.Error(ex, "[Archive] 合并数据库失败: {Db}", targetDb);
                 throw;
             }

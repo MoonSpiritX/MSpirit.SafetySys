@@ -1,9 +1,11 @@
-﻿// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 AXin（斜月Spirit）
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using MS_SafetyManagementSystem.Services;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Navigation;
 using Wpf.Ui.Controls;
@@ -102,11 +104,23 @@ namespace MS_SafetyManagementSystem.Views
         private static readonly string SoftwareGuide = BuildSoftwareGuide();
 
         /// <summary>
-        /// 更新日志数据（用户视角，依据 CHANGELOG.md 转译，简明列出近几个版本的功能变更）。
-        /// 注意：此内容面向最终用户，避免开发者术语（类名/文件名/依赖包名）；发版时需与 CHANGELOG.md 同步更新。
+        /// 更新日志数据（用户视角，依据 CHANGELOG.md 转译，简明列出最近版本的功能变更）。
+        /// 约定：最多保留最近 10 个版本（ShowChangelog 取前 10 条），新增版本插到数组最前；
+        /// 此内容面向最终用户，避免开发者术语（类名/文件名/依赖包名）；发版时需与 CHANGELOG.md 同步更新（版本号三处同步之一）。
         /// </summary>
         private static readonly (string Title, string Date, string[] Lines)[] ChangelogData =
         {
+            ("V1.2.0.0", "2026-08-17", new[]
+            {
+                "新增：图片处理「标注与剪裁」——矩形/圆形/直线/箭头/文字/马赛克六种标注工具，与裁剪一体输出；马赛克为真实像素化效果",
+                "新增：图片剪裁完整功能——按文件夹分组的图片列表、拖拽裁剪框（比例锁定、遮罩）、三种输出方式、应用并下一张连续裁剪",
+                "新增：数据目录自动找回——拔盘/盘符变化时自动定位数据目录，疑似丢失时引导恢复",
+                "新增：局域网服务强化——已连接设备实时计数与离开即时上报、防火墙放行引导升级、服务端口统一为 8000",
+                "新增：图片处理「更多功能」页（规划中功能介绍）",
+                "修复：智能导入导出一批问题（Excel 底部行误判丢数据、人员导入字段不落库、Word 同一单元格多图损坏等）",
+                "修复：图片剪裁选区偏移、固定比例拖动、裁剪框平移、遮罩显示、连续裁剪跳转等问题",
+                "修复：数据目录选盘、删除项目文件夹清理、人员统计无界面环境丢数据等问题"
+            }),
             ("V1.1.0.0", "2026-08-12", new[]
             {
                 "新增：手机图片传输——手机扫码、原图上传，按拍摄日期自动归档到电脑对应文件夹",
@@ -146,9 +160,17 @@ namespace MS_SafetyManagementSystem.Views
             // 11pt 的 DIU 值（WPF 中 XAML 的 "11pt" = 11 * 96/72 像素）
             double fontSize = 11 * 96.0 / 72.0;
 
-            for (int i = 0; i < ChangelogData.Length; i++)
+            // 内容行画刷（2026-08-17：行首加品牌青色圆点区分条目，视觉更清爽）
+            var dotBrush = new SolidColorBrush(Color.FromRgb(0x0F, 0x8F, 0x82));
+            var textBrush = new SolidColorBrush(Color.FromRgb(0x1A, 0x1A, 0x1A));
+            dotBrush.Freeze();
+            textBrush.Freeze();
+
+            // 最多展示最近 10 个版本（新增版本插在数组最前，超出部分自动不显示）
+            var entries = ChangelogData.Take(10).ToArray();
+            for (int i = 0; i < entries.Length; i++)
             {
-                var (title, date, lines) = ChangelogData[i];
+                var (title, date, lines) = entries[i];
 
                 // 版本标题行：复选框（始终勾选、不可点击更改）+ 版本号文本
                 var header = new StackPanel
@@ -188,19 +210,21 @@ namespace MS_SafetyManagementSystem.Views
                 }
                 ChangelogPanel.Children.Add(header);
 
-                // 内容行（缩进与版本号文本对齐）
+                // 内容行（缩进与版本号文本对齐；行首加青色圆点，后随「新增/优化/修复」条目）
                 foreach (string line in lines)
                 {
-                    ChangelogPanel.Children.Add(new System.Windows.Controls.TextBlock
+                    var tb = new System.Windows.Controls.TextBlock
                     {
-                        Text = line,
                         FontSize = fontSize,
-                        Foreground = new SolidColorBrush(Color.FromRgb(0x1A, 0x1A, 0x1A)),
                         TextWrapping = TextWrapping.Wrap,
                         LineHeight = 26,
                         LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
                         Margin = new Thickness(30, 0, 0, 0)
-                    });
+                    };
+                    // 圆点略小一号、靠基线，视觉更轻盈
+                    tb.Inlines.Add(new Run { Text = "● ", FontSize = fontSize - 2, Foreground = dotBrush });
+                    tb.Inlines.Add(new Run { Text = line, Foreground = textBrush });
+                    ChangelogPanel.Children.Add(tb);
                 }
             }
         }
@@ -214,8 +238,8 @@ namespace MS_SafetyManagementSystem.Views
             return
             "【关于软件】\n\n" +
             "一、软件信息\n" +
-            "  · 名称：斜月安全管理系统（个人版 Beta）\n" +
-            "  · 特点：现代界面及交互方式；极具便携性的数据录入、导入、导出；智能匹配导入与导出模版；一次录入，多次使用；\n" +
+            "  · 名称：斜月安全管理系统（个人版）\n" +
+            "  · 特点：现代界面及交互方式；极具便携性的数据录入、导入、导出；智能识别导入与导出模板；一次录入，多次使用；\n" +
             "  · 版本：V" + version + "\n" +
             "  · 作者：斜月Spirit（AXin）\n" +
             "  · 开源协议：GNU Affero General Public License v3.0（AGPL-3.0-or-later）\n" +
@@ -231,14 +255,17 @@ namespace MS_SafetyManagementSystem.Views
             "  · 隐患管理：安全巡查隐患记录、图片附件、状态跟踪、月度统计\n" +
             "  · 人员管理：人员档案、证书管理、局域网批量录入\n" +
             "  · 图片查看器：缩放、旋转、翻转、幻灯片、全屏\n" +
-            "  · 智能导入导出：Word/Excel 模板字段智能匹配\n" +
+            "  · 智能导入导出：Word/Excel 模板字段智能识别\n" +
             "  · 统计分析：隐患类型分布、人员统计图表\n\n" +
             "四、相关文档\n" +
             "  · 发布包内附《使用说明》（PDF）；\n" +
             "  · 各模块详细操作说明见菜单「设置 → 使用提示」。\n\n" +
             "五、反馈与交流\n" +
             "  使用过程中遇到问题、想提交 Bug 或功能建议，\n" +
-            "  欢迎通过左侧「作者信息」中的联系方式反馈。";
+            "  欢迎通过左侧「作者信息」中的联系方式反馈。\n\n"+
+            "六、提示\n" +
+            "  请勿尝试反编译操作，可能存在未知安全风险\n" +
+            "  正常用户不涉及本条提示内容，忽略即可，放心用。\n" ;
         }
     }
 }

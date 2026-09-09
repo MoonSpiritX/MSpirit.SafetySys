@@ -3,6 +3,7 @@
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using MS_SafetyManagementSystem.Services;
+using MS_SafetyManagementSystem.Helpers;
 using Serilog;
 using System;
 using System.Collections.ObjectModel;
@@ -57,7 +58,7 @@ namespace MS_SafetyManagementSystem.Views
             InitializeComponent();
             _archiveFiles = archiveFiles;
             _configManager = configManager;
-            _rootPath = new DataPathService().RootPath;
+            _rootPath = AppServiceProvider.GetDataPathService().RootPath;
             LoadInspection();
         }
 

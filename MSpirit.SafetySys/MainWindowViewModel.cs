@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 AXin（斜月Spirit）
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -40,7 +40,7 @@ namespace MS_SafetyManagementSystem.ViewModels
             get
             {
                 string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0.0";
-                return $"斜月安全管理系统（个人版）Beta V{version}";
+                return $"斜月安全管理系统（个人版）V{version}";
             }
         }
 
@@ -334,7 +334,7 @@ namespace MS_SafetyManagementSystem.ViewModels
         /// </summary>
         public void ExecuteBatchPersonnelEntry(GroupNode node)
         {
-            var window = new Controls.LanEntryWindow(node.Id, node.Name);
+            var window = new Controls.LanPersonnelEntryWindow(node.Id, node.Name);
             window.Owner = Application.Current.MainWindow;
             window.Show();
         }
@@ -346,7 +346,7 @@ namespace MS_SafetyManagementSystem.ViewModels
         {
             // node.Name 格式如 "2026年06月"，转换为 "2026-06"
             string yearMonth = node.Name.Replace("年", "-").Replace("月", "");
-            var window = new Controls.HazardLanEntryWindow(node.Id, node.Name, yearMonth);
+            var window = new Controls.LanHazardEntryWindow(node.Id, node.Name, yearMonth);
             window.Owner = Application.Current.MainWindow;
             window.Show();
         }

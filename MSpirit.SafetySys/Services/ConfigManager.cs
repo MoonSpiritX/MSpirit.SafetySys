@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 AXin（斜月Spirit）
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using Microsoft.Data.Sqlite;
@@ -78,6 +78,8 @@ namespace MS_SafetyManagementSystem.Services
 
         public bool AddProject(string name)
         {
+            // 2026-08-15 修复：先 Trim 再判重，避免"同名项目 "（尾随空格）绕过重名检查创建重名项目
+            name = name?.Trim() ?? "";
             if (string.IsNullOrWhiteSpace(name))
                 return false;
             if (_masterDb.GetAllProjects().Any(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
@@ -150,12 +152,17 @@ namespace MS_SafetyManagementSystem.Services
                 string dbPath = Path.Combine(projectFolder, "data.db");
                 if (File.Exists(dbPath))
                 {
-                    // 清除连接池，释放所有打开的连接
+                    // 2026-08-15 修复：释放 data.db 句柄（此前 tempConn 用默认连接池，
+                    // Open/Close 后连接回池仍持有文件句柄 → Directory.Delete 必然失败，
+                    // 文件夹只能等下次启动清理。现先 ClearPool 清残留池连接，再用
+                    // Pooling=False 连接执行 checkpoint，Close 后立即关闭句柄）
                     try
                     {
-                        using var tempConn = new SqliteConnection($"Data Source={dbPath}");
-                        SqliteConnection.ClearPool(tempConn);
-                        // 强制执行 wal checkpoint 并关闭
+                        using (var probe = new SqliteConnection($"Data Source={dbPath}"))
+                        {
+                            SqliteConnection.ClearPool(probe);
+                        }
+                        using var tempConn = new SqliteConnection($"Data Source={dbPath};Pooling=False");
                         tempConn.Open();
                         using var cmd = new SqliteCommand("PRAGMA wal_checkpoint(TRUNCATE);", tempConn);
                         cmd.ExecuteNonQuery();

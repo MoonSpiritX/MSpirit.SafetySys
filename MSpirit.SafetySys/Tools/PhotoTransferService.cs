@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using MetadataExtractor.Formats.Exif;
+using MS_SafetyManagementSystem.Services;
 using Serilog;
 
 namespace MS_SafetyManagementSystem.Tools
@@ -21,126 +22,47 @@ namespace MS_SafetyManagementSystem.Tools
     /// 手机图片传输服务：手机通过局域网把图片上传到电脑指定位置。
     /// 与人员/隐患 LAN 录入的本质差异——纯图片落盘，不建记录、不 OCR、不绑定项目分组：
     /// 上传 → 服务端读 EXIF 拍摄日期（MetadataExtractor）→ 按日期分文件夹（yyyy-MM-dd）→ 原图直写落盘。
-    /// 复用 LanService 骨架：Kestrel 零 UAC 绑定、token 鉴权、20MB 上限、端口 5000-5099 自动探测。
+    /// 复用 LanServiceBase 骨架：Kestrel 零 UAC 绑定、token 鉴权、20MB 上限、
+    /// 端口范围由 Common/LanPorts 定义并自动探测（2026-08-16 抽取）。
     /// </summary>
-    public class PhotoTransferService : IDisposable
+    public class PhotoTransferService : LanServiceBase
     {
-        public const int MaxUploadBytes = 20 * 1024 * 1024;   // 图片上传上限 20MB（与 LAN 录入一致）
-
-        private WebApplication? _app;
-        private CancellationTokenSource? _cts;
-        private volatile bool _running;
-        private int _port;
-        private string _boundIpAddress = "127.0.0.1";
-        private string _token = "";
         private string _rootFolder = "";
-        private readonly string _htmlPage;
 
         /// <summary>接收一张图片时触发（参数：拍摄/生成时间、落盘文件名、字节数、完整落盘路径），供窗口更新列表与计数</summary>
         public event Action<DateTime, string, long, string>? PhotoReceived;
 
-        public bool IsRunning => Volatile.Read(ref _running);
-        public int Port => _port;
-        public string BoundIpAddress => _boundIpAddress;
-        public string Token => _token;
+        protected override string ApplicationName => "PhotoTransferService";
+        protected override string LogPrefix => "PhotoTransfer";
+        protected override string ServiceDisplayName => "图片传输";
 
-        public PhotoTransferService()
+        public PhotoTransferService() : base("photo_transfer_page.html")
         {
-            _htmlPage = LoadEmbeddedHtml();
         }
 
-        // ==================== 启动 / 停止 ====================
+        // ==================== 启动（骨架在 LanServiceBase.Start） ====================
 
-        /// <summary>启动服务：rootFolder 为接收图片的根目录（接收后按日期分文件夹存放）</summary>
+        /// <summary>启动服务：rootFolder 为接收图片的根目录（接收后按日期分文件夹存放）。
+        /// 校验通过后委托基类执行 Kestrel 托管/鉴权骨架。</summary>
         public void Start(int port, string rootFolder)
         {
             if (_running) return;
             if (string.IsNullOrWhiteSpace(rootFolder) || !Directory.Exists(rootFolder))
                 throw new ArgumentException("目标文件夹不存在", nameof(rootFolder));
 
-            _port = port;
             _rootFolder = rootFolder;
-            _boundIpAddress = GetLocalIPAddress();
-            _cts = new CancellationTokenSource();
-            _token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-
-            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
-            {
-                ApplicationName = "PhotoTransferService",
-                Args = Array.Empty<string>()
-            });
-            builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
-            builder.WebHost.UseKestrel();
-            _app = builder.Build();
-
-            // 鉴权中间件：请求必须携带正确 token（二维码 URL 已含 token）
-            _app.Use(async (ctx, next) =>
-            {
-                if (!IsAuthorized(ctx))
-                {
-                    ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    await ctx.Response.WriteAsJsonAsync(new { ok = false, error = "未授权访问，请重新扫描二维码" });
-                    return;
-                }
-                await next();
-            });
-
-            var svc = this;
-            _app.MapGet("/", (HttpContext ctx) => ServePage(ctx));
-            _app.MapGet("/ping", (HttpContext ctx) => ctx.Response.WriteAsJsonAsync(new { ok = true }));
-            _app.MapPost("/upload", (HttpContext ctx) => HandleUpload(ctx));
-
-            try
-            {
-                // 同步等待 Kestrel 启动完成：端口被占等绑定失败会在此抛出，
-                // 供调用方的端口探测（StartOnAvailablePort）捕获并尝试下一个端口。
-                // （fire-and-forget 会导致"都显示 5000"的假象，2026-08-12 修复）
-                Task.Run(() => _app.StartAsync(_cts.Token)).GetAwaiter().GetResult();
-            }
-            catch
-            {
-                // 清理半启动状态后重新抛出（端口占用等）
-                try { _app.DisposeAsync().AsTask().GetAwaiter().GetResult(); } catch { }
-                _app = null;
-                throw;
-            }
-            Volatile.Write(ref _running, true);
-            Log.Information("PhotoTransferService started on port {Port} (Kestrel, bound 0.0.0.0, root={Root})", port, rootFolder);
+            Log.Information("[PhotoTransfer] 接收根目录={Root}", rootFolder);
+            base.Start(port);
         }
 
-        public void Stop()
+        protected override void MapRoutes(WebApplication app)
         {
-            _cts?.Cancel();
-            Volatile.Write(ref _running, false);
-
-            var app = Interlocked.Exchange(ref _app, null);
-            if (app != null)
-            {
-                _ = Task.Run(() => { try { app.StopAsync(CancellationToken.None).GetAwaiter().GetResult(); } catch { } });
-            }
-            Log.Information("PhotoTransferService stopped");
-        }
-
-        /// <summary>校验请求 token（恒定时间比较，防时序攻击）</summary>
-        private bool IsAuthorized(HttpContext ctx)
-        {
-            if (string.IsNullOrEmpty(_token)) return false;
-            string? supplied = ctx.Request.Query["token"].FirstOrDefault();
-            if (string.IsNullOrEmpty(supplied)) return false;
-            var a = Encoding.UTF8.GetBytes(supplied);
-            var b = Encoding.UTF8.GetBytes(_token);
-            return a.Length == b.Length && CryptographicOperations.FixedTimeEquals(a, b);
+            app.MapGet("/", (HttpContext ctx) => ServePage(ctx));
+            app.MapGet("/ping", (HttpContext ctx) => ctx.Response.WriteAsJsonAsync(new { ok = true }));
+            app.MapPost("/upload", (HttpContext ctx) => HandleUpload(ctx));
         }
 
         // ==================== 路由处理 ====================
-
-        private async Task ServePage(HttpContext ctx)
-        {
-            // 禁止缓存：手机浏览器默认启发式缓存 HTML，会加载旧版页面导致新功能不生效
-            ctx.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
-            ctx.Response.ContentType = "text/html; charset=utf-8";
-            await ctx.Response.WriteAsync(_htmlPage);
-        }
 
         /// <summary>
         /// 处理图片上传：校验文件名白名单 → 读取原图字节（20MB 上限）→ 临时文件 →
@@ -156,6 +78,7 @@ namespace MS_SafetyManagementSystem.Tools
                 await ctx.Response.WriteAsJsonAsync(new { ok = false, error = "不支持的图片格式" });
                 return;
             }
+            Log.Debug("[PhotoTransfer] 收到上传：fileName={FileName} 来源={Ip}", fileName, ctx.Connection.RemoteIpAddress);
 
             byte[]? fileData = await ReadBodyWithLimitAsync(ctx, MaxUploadBytes);
             if (fileData == null)
@@ -175,6 +98,7 @@ namespace MS_SafetyManagementSystem.Tools
             Directory.CreateDirectory(tempDir);
             string tempFile = Path.Combine(tempDir, Guid.NewGuid().ToString("N") + Path.GetExtension(fileName));
             await File.WriteAllBytesAsync(tempFile, fileData);
+            Log.Debug("[PhotoTransfer] 图片已暂存：{Path} 大小={Size}字节", tempFile, fileData.Length);
 
             try
             {
@@ -182,9 +106,11 @@ namespace MS_SafetyManagementSystem.Tools
                 // 1) EXIF DateTimeOriginal（手机内拍摄时间，相机/手机直出照片最准）
                 // 2) 手机文件生成时间 mtime（file.lastModified，无 EXIF 的截图/微信图等）
                 // 3) 都取不到 → 上传当天
-                DateTime shootTime = ReadExifShootTime(tempFile)
-                                     ?? ParseMtimeMillis(ctx.Request.Query["mtime"].FirstOrDefault())
-                                     ?? DateTime.Now;
+                DateTime? exifTime = ReadExifShootTime(tempFile);
+                DateTime? mtimeTime = ParseMtimeMillis(ctx.Request.Query["mtime"].FirstOrDefault());
+                DateTime shootTime = exifTime ?? mtimeTime ?? DateTime.Now;
+                Log.Information("[PhotoTransfer] 拍摄时间判定：EXIF={Exif:yyyy-MM-dd HH:mm:ss} mtime={Mtime:yyyy-MM-dd HH:mm:ss} 采用={Used:yyyy-MM-dd HH:mm:ss}",
+                    exifTime, mtimeTime, shootTime);
                 string dateFolder = shootTime.ToString("yyyy-MM-dd");
                 // 日期来自解析值或 DateTime 格式化，天然合法；仍做防御性校验（防未来改代码引入原始输入）
                 if (!IsValidDateFolder(dateFolder))
@@ -199,6 +125,8 @@ namespace MS_SafetyManagementSystem.Tools
 
                 string savedName = Path.GetFileName(targetPath);
                 PhotoReceived?.Invoke(shootTime, savedName, fileData.Length, targetPath);
+                Log.Information("[PhotoTransfer] 图片已保存：{FileName} → {TargetPath}（日期目录 {DateFolder}，{Size}字节）",
+                    savedName, targetPath, dateFolder, fileData.Length);
                 await ctx.Response.WriteAsJsonAsync(new
                 {
                     ok = true,
@@ -272,6 +200,7 @@ namespace MS_SafetyManagementSystem.Tools
             }
             catch
             {
+                Log.Debug("[PhotoTransfer] 时间戳解析失败（返回 null）");
                 return null;
             }
             // 1975-12-01（第一张数码照片）~ 当前+1 年
@@ -288,63 +217,5 @@ namespace MS_SafetyManagementSystem.Tools
             string ext = Path.GetExtension(fileName).ToLowerInvariant();
             return ext is ".png" or ".jpg" or ".jpeg" or ".bmp" or ".webp" or ".tiff" or ".tif" or ".gif";
         }
-
-        /// <summary>读取请求体（限量），超限返回 null</summary>
-        public static async Task<byte[]?> ReadBodyWithLimitAsync(HttpContext ctx, int maxBytes)
-        {
-            using var ms = new MemoryStream();
-            var buffer = new byte[81920];
-            int total = 0;
-            while (true)
-            {
-                int read = await ctx.Request.Body.ReadAsync(buffer, 0, buffer.Length);
-                if (read <= 0) break;
-                total += read;
-                if (total > maxBytes) return null;
-                await ms.WriteAsync(buffer, 0, read);
-            }
-            return ms.ToArray();
-        }
-
-        /// <summary>获取本机局域网 IPv4 地址（多网卡取第一个非回环、非虚拟网卡）</summary>
-        public static string GetLocalIPAddress()
-        {
-            try
-            {
-                foreach (var ni in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
-                {
-                    if (ni.OperationalStatus != System.Net.NetworkInformation.OperationalStatus.Up) continue;
-                    if (ni.NetworkInterfaceType == System.Net.NetworkInformation.NetworkInterfaceType.Loopback) continue;
-                    var props = ni.GetIPProperties();
-                    foreach (var addr in props.UnicastAddresses)
-                    {
-                        if (addr.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-                            return addr.Address.ToString();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "获取本机 IP 失败，使用回环地址");
-            }
-            return "127.0.0.1";
-        }
-
-        private static string LoadEmbeddedHtml()
-        {
-            var htmlPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "photo_transfer_page.html");
-            if (File.Exists(htmlPath))
-                return File.ReadAllText(htmlPath, Encoding.UTF8);
-
-            var srcPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                @"..\..\..\..\Resources\photo_transfer_page.html");
-            if (File.Exists(srcPath))
-                return File.ReadAllText(srcPath, Encoding.UTF8);
-
-            Log.Warning("PhotoTransferService: HTML page file not found, using fallback minimal page");
-            return "<!DOCTYPE html><html><body><h2>页面加载失败</h2><p>请检查 Resources/photo_transfer_page.html 是否存在</p></body></html>";
-        }
-
-        public void Dispose() => Stop();
     }
 }

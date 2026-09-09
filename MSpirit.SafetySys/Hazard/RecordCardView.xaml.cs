@@ -120,7 +120,7 @@ namespace MS_SafetyManagementSystem.Hazard
                     {
                         _attachmentsRootPath = "";
                     }
-                    var dataPathService = new DataPathService();
+                    var dataPathService = AppServiceProvider.GetDataPathService();
                     _cacheRootPath = Path.Combine(dataPathService.RootPath, "Temp");
                     _projectId = dataService.ProjectId;
                     _currentModule = mainWindow.ViewModel.GetCurrentModuleKey();

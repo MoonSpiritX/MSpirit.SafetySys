@@ -91,6 +91,7 @@ namespace MS_SafetyManagementSystem.Services
             }
             catch
             {
+                Log.Debug("[启动清理] 判定目录是否为空失败，按非空处理: {Dir}", dir);
                 return false;
             }
         }

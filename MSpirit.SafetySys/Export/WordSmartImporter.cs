@@ -222,7 +222,7 @@ namespace MS_SafetyManagementSystem.Export
             ImportRowData importRow,
             (int tableIndex, int headerRowIndex, Dictionary<int, string> columnMapping, List<string[]> dataRows) block,
             int rowIdx,
-            Dictionary<string, byte[]> cellImages,
+            Dictionary<string, List<byte[]>> cellImages,
             string filePath,
             string tempDir)
         {
@@ -244,12 +244,17 @@ namespace MS_SafetyManagementSystem.Export
 
                     // 图片键使用数据行在表格内的绝对行号（表头行可能不在首行）
                     string cellKey = $"{block.tableIndex}_{block.headerRowIndex + 1 + rowIdx}_{colIdx}";
-                    if (cellImages.TryGetValue(cellKey, out var imgBytes))
+                    if (cellImages.TryGetValue(cellKey, out var imgList))
                     {
-                        string tempFile = Path.Combine(tempDir, $"{Guid.NewGuid():N}.jpg");
-                        File.WriteAllBytes(tempFile, imgBytes);
-                        if (!photos.Contains(tempFile))
-                            photos.Add(tempFile);
+                        // 一个单元格可能有多张图（2026-08-14 修复：原实现把多张图字节拼成
+                        // 单个数组写出，产出损坏图片；现每张图单独写文件）
+                        foreach (var imgBytes in imgList)
+                        {
+                            string tempFile = Path.Combine(tempDir, $"{Guid.NewGuid():N}.jpg");
+                            File.WriteAllBytes(tempFile, imgBytes);
+                            if (!photos.Contains(tempFile))
+                                photos.Add(tempFile);
+                        }
                     }
 
                     if (photos.Count > 0)
@@ -374,9 +379,9 @@ namespace MS_SafetyManagementSystem.Export
             return total;
         }
 
-        private Dictionary<string, byte[]> ExtractEmbeddedImages(MainDocumentPart mainPart, List<W.Table> tables)
+        private Dictionary<string, List<byte[]>> ExtractEmbeddedImages(MainDocumentPart mainPart, List<W.Table> tables)
         {
-            var result = new Dictionary<string, byte[]>();
+            var result = new Dictionary<string, List<byte[]>>();
 
             try
             {
@@ -403,17 +408,12 @@ namespace MS_SafetyManagementSystem.Export
                                 stream.CopyTo(ms);
                                 string key = $"{t}_{r}_{c}";
 
-                                if (result.TryGetValue(key, out var existing))
+                                if (!result.TryGetValue(key, out var list))
                                 {
-                                    var combined = new byte[existing.Length + ms.ToArray().Length];
-                                    Buffer.BlockCopy(existing, 0, combined, 0, existing.Length);
-                                    Buffer.BlockCopy(ms.ToArray(), 0, combined, existing.Length, (int)ms.Length);
-                                    result[key] = combined;
+                                    list = new List<byte[]>();
+                                    result[key] = list;
                                 }
-                                else
-                                {
-                                    result[key] = ms.ToArray();
-                                }
+                                list.Add(ms.ToArray());
                             }
                         }
                     }

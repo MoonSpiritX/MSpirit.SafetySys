@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <!-- 斜月安全管理系统 · 绿色版启动器
        职责：定位并启动主程序（MSpirit.SafetySys.exe），透传命令行参数。
@@ -15,7 +15,7 @@
     <!-- 用户可见的程序名：发布产物即“斜月安全管理系统.exe”，无需改名 -->
     <AssemblyName>斜月安全管理系统</AssemblyName>
     <RootNamespace>MSpirit.SafetySys.Launcher</RootNamespace>
-    <Product>斜月安全管理系统（个人版）Beta V1.0</Product>
+    <Product>斜月安全管理系统（个人版）V1.0</Product>
     <ApplicationIcon>斜月安全管理系统.ico</ApplicationIcon>
     <Authors>AXin</Authors>
     <Version>1.0.0.0</Version>

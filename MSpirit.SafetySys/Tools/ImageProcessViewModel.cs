@@ -16,7 +16,7 @@ namespace MS_SafetyManagementSystem.Tools
 {
     public enum ImageProcessMode
     {
-        Rotation, FormatCompress, Crop, ExifOcr, IdPhoto
+        Rotation, Crop, MoreFeatures
     }
 
     public enum RotationOperation
@@ -82,17 +82,16 @@ namespace MS_SafetyManagementSystem.Tools
                 _selectedMode = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(IsRotationVisible));
-                OnPropertyChanged(nameof(IsFormatCompressVisible));
                 OnPropertyChanged(nameof(IsCropVisible));
-                OnPropertyChanged(nameof(IsExifOcrVisible));
-                OnPropertyChanged(nameof(IsIdPhotoVisible));
+                OnPropertyChanged(nameof(IsMoreFeaturesVisible));
             }
         }
         public bool IsRotationVisible => SelectedMode == ImageProcessMode.Rotation;
-        public bool IsFormatCompressVisible => SelectedMode == ImageProcessMode.FormatCompress;
         public bool IsCropVisible => SelectedMode == ImageProcessMode.Crop;
-        public bool IsExifOcrVisible => SelectedMode == ImageProcessMode.ExifOcr;
-        public bool IsIdPhotoVisible => SelectedMode == ImageProcessMode.IdPhoto;
+        public bool IsMoreFeaturesVisible => SelectedMode == ImageProcessMode.MoreFeatures;
+
+        // ═══ 标注与剪裁面板（独立 ViewModel，与方向转换平级、不共享图片集合） ═══
+        public ImageProcessCropViewModel CropViewModel { get; } = new();
 
         // ═══ 方向转换：文件列表 ═══
         public BatchObservableCollection<RotateFileItem> RotateFiles { get; } = new();
@@ -225,10 +224,8 @@ namespace MS_SafetyManagementSystem.Tools
                 SelectedMode = s switch
                 {
                     "rotation" => ImageProcessMode.Rotation,
-                    "format" => ImageProcessMode.FormatCompress,
                     "crop" => ImageProcessMode.Crop,
-                    "exifocr" => ImageProcessMode.ExifOcr,
-                    "idphoto" => ImageProcessMode.IdPhoto,
+                    "more" => ImageProcessMode.MoreFeatures,
                     _ => ImageProcessMode.Rotation
                 };
             });

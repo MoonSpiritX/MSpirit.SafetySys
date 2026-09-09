@@ -8,6 +8,7 @@ using MS_SafetyManagementSystem.Common;
 using MS_SafetyManagementSystem.Models;
 using MS_SafetyManagementSystem.Peoplemanagement;
 using MS_SafetyManagementSystem.Services;
+using MS_SafetyManagementSystem.Helpers;
 using MS_SafetyManagementSystem.ViewModels;
 using MS_SafetyManagementSystem.Views;
 using Serilog;
@@ -180,7 +181,7 @@ namespace MS_SafetyManagementSystem.Export
                     return;
                 }
 
-                var dataPathService = new DataPathService();
+                var dataPathService = AppServiceProvider.GetDataPathService();
                 var mappingService = new MappingDictionaryService(dataPathService.RootPath);
                 string attachmentsRoot = GetAttachmentsRootPath();
                 var exporter = new WordSmartExporter(mappingService, attachmentsRoot, "Hazard");
@@ -211,7 +212,7 @@ namespace MS_SafetyManagementSystem.Export
             }
             else if (ext == ".xlsx")
             {
-                var dataPathService = new DataPathService();
+                var dataPathService = AppServiceProvider.GetDataPathService();
                 var mappingService = new MappingDictionaryService(dataPathService.RootPath);
                 var mainWindowForExcel = Application.Current.MainWindow as MainWindow;
                 var projectDataService = mainWindowForExcel?.ViewModel.GetProjectDataService();
@@ -282,7 +283,7 @@ namespace MS_SafetyManagementSystem.Export
             if (!string.IsNullOrEmpty(SelectedDateGroupText) && SelectedDateGroupText != "请选择日期")
                 contextName += "-" + SelectedDateGroupText.Split(' ')[0];
 
-            var dataPathService = new DataPathService();
+            var dataPathService = AppServiceProvider.GetDataPathService();
             var mappingService = new MappingDictionaryService(dataPathService.RootPath);
             var provider = new PersonnelExportDataProvider(dataRows, contextName);
 
@@ -593,7 +594,7 @@ namespace MS_SafetyManagementSystem.Export
                 return;
             }
 
-            var dataPathService = new DataPathService();
+            var dataPathService = AppServiceProvider.GetDataPathService();
             var mappingService = new MappingDictionaryService(dataPathService.RootPath);
             var manager = new ImportManager(mappingService, "Hazard");
             IDataWriter writer = new HazardDataWriter();
@@ -706,6 +707,17 @@ namespace MS_SafetyManagementSystem.Export
                     parseResult, writer, dataService, targetYearMonth, targetGroupId, autoAssignByDate));
 
                 IsExporting = false;
+
+                // 导入成功后刷新主界面分组树与当前记录列表（2026-08-14 修复：
+                // 原逻辑导入后不刷新，回到模块界面分组树/右侧卡片不即时显示，需切换模块才更新）
+                if (resultStats.success > 0)
+                {
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        var win = Application.Current.MainWindow as MainWindow;
+                        win?.ViewModel.GroupTree.LoadGroups();
+                    });
+                }
 
                 string resultMsg = $"导入完成！\n成功：{resultStats.success} 条\n失败：{resultStats.failed} 条";
                 if (resultStats.errors.Count > 0)

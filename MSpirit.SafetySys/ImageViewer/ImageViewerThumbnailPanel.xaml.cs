@@ -477,6 +477,7 @@ namespace MS_SafetyManagementSystem.ImageViewer
                 }
                 catch
                 {
+                    Serilog.Log.Debug("[Thumb] 缩略图解码失败（返回 null）");
                     return null;
                 }
                 finally

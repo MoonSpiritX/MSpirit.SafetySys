@@ -11,8 +11,10 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using MS_SafetyManagementSystem.Common;
 using MS_SafetyManagementSystem.Controls;
 using MS_SafetyManagementSystem.Services;
+using MS_SafetyManagementSystem.Helpers;
 using QRCoder;
 using Serilog;
 using Wpf.Ui.Controls;
@@ -75,7 +77,7 @@ namespace MS_SafetyManagementSystem.Tools
             DataContext = this;
             FileListGrid.ItemsSource = FileItems;
 
-            var dataPathService = new DataPathService();
+            var dataPathService = AppServiceProvider.GetDataPathService();
             _locationsService = new PhotoTransferLocationsService(dataPathService.RootPath);
 
             // 窗口级拖放：文件夹拖入任意位置 → 添加到左侧保存位置列表
@@ -162,7 +164,12 @@ namespace MS_SafetyManagementSystem.Tools
             var container = FindAncestor<ListBoxItem>(e.OriginalSource as DependencyObject);
             if (container?.DataContext is not LocationItem loc) return;
 
-            var screenPoint = PointToScreen(e.GetPosition(this));
+            // 屏幕物理像素 → DIP：与主窗口其他右键菜单一致（2026-08-16 修复：
+            // 原 PointToScreen 直接传物理像素，Popup 偏移按 DIP 解释，非 100% 缩放屏上位置偏右下）
+            var mouseScreenPoint = System.Windows.Forms.Cursor.Position;
+            var source = PresentationSource.FromVisual(this);
+            if (source?.CompositionTarget == null) return;
+            var wpfPoint = source.CompositionTarget.TransformFromDevice.Transform(new Point(mouseScreenPoint.X, mouseScreenPoint.Y));
 
             var menu = new DropdownMenu();
             menu.AddItem("打开文件夹", () => OpenFolder(loc.FullPath));
@@ -175,7 +182,7 @@ namespace MS_SafetyManagementSystem.Tools
             // 默认位置不可移出（保留默认图片位置作为兜底）
             removeBtn.IsEnabled = !loc.IsDefault;
 
-            menu.ShowAt(screenPoint);
+            menu.ShowAt(wpfPoint);
             e.Handled = true;
         }
 
@@ -218,17 +225,37 @@ namespace MS_SafetyManagementSystem.Tools
 
             try
             {
+                // 首次使用引导：检测防火墙放行（程序级阻止规则/放行规则），缺失则弹引导窗口。
+                // 返回 false 不阻断：手机首次连接时 Windows 会弹「是否允许访问网络」窗口，点允许即放行。
+                if (!LanFirewallService.EnsureFirewallAccess(this))
+                    ToastService.Show("未自动放行：手机首次连接时，Windows 会弹出\n" +
+                        "『是否允许访问网络』窗口，请务必点【允许访问】。\n" +
+                        "若点【取消】会生成阻止规则导致无法连接，\n" +
+                        "可停止服务重新启动后选『立即解除阻止』。", this, 3000);
+
                 _service = new PhotoTransferService();
                 _service.PhotoReceived += OnPhotoReceived;
+                _deviceTracker.Reset();
+                DeviceCountText.Text = "0";
+                _service.DeviceConnected += OnDeviceConnected;
+                _service.DeviceLeft += OnDeviceLeft;
 
-                int port = StartOnAvailablePort(5000);
+                // 设备在线兜底扫描：正常情况下手机页面关闭会经 /bye 即时移除；
+                // 心跳超时仅兜底 beacon 失败/浏览器被强杀等场景（后台节流误判风险已由 30s 兜底缓解）
+                _deviceSweepTimer = new System.Windows.Threading.DispatcherTimer { Interval = DeviceSweepInterval };
+                _deviceSweepTimer.Tick += (s, e) => SweepDisconnectedDevices();
+                _deviceSweepTimer.Start();
+
+                // 自动寻找可用端口：从 LanPorts.Start 递增尝试（共用 LanPortProbe，捕获含 SocketException）
+                int port = LanPortProbe.FindAvailable(LanPorts.Start, p => _service!.Start(p, rootFolder));
                 if (port < 0)
                 {
-                    System.Windows.MessageBox.Show("无法找到可用端口（5000-5099 均被占用）", "错误",
+                    System.Windows.MessageBox.Show($"无法找到可用端口（{LanPorts.Start}-{LanPorts.ProbeEnd} 均被占用）", "错误",
                         System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                     StopService();
                     return;
                 }
+                Log.Information("PhotoTransferWindow: 端口探测成功：{Port}（绑定 IP={Ip}）", port, _service.BoundIpAddress);
 
                 StatusIndicator.Fill = Brushes.LimeGreen;
                 StatusText.Text = "服务运行中";
@@ -244,6 +271,7 @@ namespace MS_SafetyManagementSystem.Tools
                 DragHint.Visibility = Visibility.Collapsed;
 
                 GenerateQRCode();
+
                 Log.Information("PhotoTransferWindow: 服务已启动，目标={Root}", rootFolder);
             }
             catch (Exception ex)
@@ -264,6 +292,8 @@ namespace MS_SafetyManagementSystem.Tools
                 if (_service != null)
                 {
                     _service.PhotoReceived -= OnPhotoReceived;
+                    _service.DeviceConnected -= OnDeviceConnected;
+                    _service.DeviceLeft -= OnDeviceLeft;
                     _service.Stop();
                     _service.Dispose();
                     _service = null;
@@ -275,6 +305,15 @@ namespace MS_SafetyManagementSystem.Tools
             }
             finally
             {
+                // 停止服务：停止心跳扫描、已连接设备归零（设备集合为本次服务会话的）
+                if (_deviceSweepTimer != null)
+                {
+                    _deviceSweepTimer.Stop();
+                    _deviceSweepTimer = null;
+                }
+                _deviceTracker.Reset();
+                DeviceCountText.Text = "0";
+
                 StatusIndicator.Fill = Brushes.Gray;
                 StatusText.Text = "服务未启动";
                 StartButton.Visibility = Visibility.Visible;
@@ -291,31 +330,16 @@ namespace MS_SafetyManagementSystem.Tools
             }
         }
 
-        /// <summary>从 startPort 递增尝试启动服务，返回成功绑定的端口</summary>
-        private int StartOnAvailablePort(int startPort)
-        {
-            string rootFolder = _locationsService.CurrentLocation;
-            for (int port = startPort; port < startPort + 100; port++)
-            {
-                try
-                {
-                    _service!.Start(port, rootFolder);
-                    return port;
-                }
-                catch (Exception ex) when (ex is IOException or InvalidOperationException or System.Net.HttpListenerException)
-                {
-                    // 端口绑定失败（占用等）：记录后尝试下一个端口
-                    Log.Information("PhotoTransferWindow: 端口 {Port} 不可用，尝试下一个", port);
-                    continue;
-                }
-            }
-            return -1;
-        }
+        /// <summary>
+        /// 端口探测已抽到 <see cref="LanPortProbe.FindAvailable"/>（三窗口共用，见 Services/LanPortProbe.cs）：
+        /// 从 LanPorts.Start 递增尝试启动，捕获 Kestrel 绑定失败（含 Windows 保留端口的 SocketException），
+        /// 范围与 LanPorts.ProbeEnd 对齐（不再硬编码 +100），防火墙放行范围覆盖整个探测范围。
+        /// </summary>
 
         private void GenerateQRCode()
         {
             string boundIp = _service?.BoundIpAddress ?? PhotoTransferService.GetLocalIPAddress();
-            int port = _service?.Port ?? 5000;
+            int port = _service?.Port ?? LanPorts.Start;
             string url = $"http://{boundIp}:{port}/?token={_service?.Token}";
 
             var qrData = _qrGenerator.CreateQrCode(url, QRCodeGenerator.ECCLevel.Q);
@@ -369,12 +393,16 @@ namespace MS_SafetyManagementSystem.Tools
             var row = FindAncestor<DataGridRow>(e.OriginalSource as DependencyObject);
             if (row?.DataContext is not PhotoTransferItem item || string.IsNullOrEmpty(item.FullPath)) return;
 
-            var screenPoint = PointToScreen(e.GetPosition(this));
+            // 屏幕物理像素 → DIP：与主窗口其他右键菜单一致（2026-08-16 修复，原因同位置列表菜单）
+            var mouseScreenPoint = System.Windows.Forms.Cursor.Position;
+            var source = PresentationSource.FromVisual(this);
+            if (source?.CompositionTarget == null) return;
+            var wpfPoint = source.CompositionTarget.TransformFromDevice.Transform(new Point(mouseScreenPoint.X, mouseScreenPoint.Y));
 
             var menu = new DropdownMenu();
             menu.AddItem("打开文件位置", () => OpenInExplorer(item.FullPath));
 
-            menu.ShowAt(screenPoint);
+            menu.ShowAt(wpfPoint);
             e.Handled = true;
         }
 
@@ -402,6 +430,41 @@ namespace MS_SafetyManagementSystem.Tools
             {
                 Log.Warning(ex, "打开文件位置失败：{Path}", path);
             }
+        }
+
+        /// <summary>已连接设备跟踪（三窗口共用，见 Services/LanDeviceTracker.cs；心跳 30s 兜底，正常关页经 /bye 即时移除）</summary>
+        private readonly LanDeviceTracker _deviceTracker = new(TimeSpan.FromSeconds(30));
+
+        private static readonly TimeSpan DeviceSweepInterval = TimeSpan.FromSeconds(5);
+        private System.Windows.Threading.DispatcherTimer? _deviceSweepTimer;
+
+        /// <summary>任何授权请求到达服务时触发（参数：来源 IP）——记录心跳并统计"已连接设备"</summary>
+        private void OnDeviceConnected(string ip)
+        {
+            if (string.IsNullOrEmpty(ip)) return;
+            Dispatcher.Invoke(() =>
+            {
+                _deviceTracker.OnConnected(ip);
+                DeviceCountText.Text = _deviceTracker.Count.ToString();
+            });
+        }
+
+        /// <summary>手机页面关闭上报（/bye）→ 立即从已连接设备移除（无需等心跳超时）</summary>
+        private void OnDeviceLeft(string ip)
+        {
+            if (string.IsNullOrEmpty(ip)) return;
+            Dispatcher.Invoke(() =>
+            {
+                if (_deviceTracker.OnLeft(ip))
+                    DeviceCountText.Text = _deviceTracker.Count.ToString();
+            });
+        }
+
+        /// <summary>周期扫描：把超过超时无请求的设备从计数中移除（beacon 失败兜底）</summary>
+        private void SweepDisconnectedDevices()
+        {
+            if (_deviceTracker.Sweep())
+                DeviceCountText.Text = _deviceTracker.Count.ToString();
         }
     }
 }

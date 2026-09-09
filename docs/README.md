@@ -2,7 +2,7 @@
 
 > **English README**：[`README.md`](../README.md)
 
-单机桌面版安全管理系统，面向**实体行业**（建筑、制造、生产等）企业安全管理：日常安全巡查记录与人员信息管理。当前为个人版 **Beta V1.0**（版本号 1.0.0.1）。
+单机桌面版安全管理系统，面向**实体行业**（建筑、制造、生产等）企业安全管理：日常安全巡查记录与人员信息管理。当前为个人版 **V1.2**（版本号 1.2.0.0）。
 
 ## 功能特性
 
@@ -13,6 +13,7 @@
 | 图片查看器（ImageViewer） | 内置看图器：全屏、缩放（Chase 引擎）、旋转/翻转、缩略图、幻灯片 |
 | 智能导入导出（Export） | 基于 Word/Excel 模板的字段智能匹配导出与导入，自动生成整改报告书等文档 |
 | 统计分析（Analysis） | 按月的隐患/人员统计分析图表（LiveChartsCore） |
+| 图片处理（ImageProcess） | 图片方向转换（左转/右转/180°/翻转/EXIF 校正）+ **标注与剪裁**（矩形/圆形/直线/箭头/文字/马赛克六种标注工具，与裁剪一体输出） |
 | 其他 | 系统托盘最小化、单实例保护、四季主题背景 + 节气日历、二维码生成、右键菜单快捷操作 |
 
 ## 技术栈
@@ -53,7 +54,7 @@ dotnet publish MS_SafetyManagementSystem.csproj -c Release -r win-x64 --self-con
 
 ## 数据存储与备份（重要）
 
-- **数据根目录**：默认 `D:\MSpirit.SafetySys.Date`（当机器存在 D 盘时）；否则为 `%LOCALAPPDATA%\MSpirit.SafetySys.Date`。可在启动逻辑中调整（`Services/DataPathService.cs`）。
+- **数据根目录**：默认取第一个可用的非系统固定盘（D→E→F…字母序，数据根为 `{盘根}\MSpirit.SafetySys.Date`）；无可用非系统固定盘时回退 `%LOCALAPPDATA%\MSpirit.SafetySys.Date`。启动时程序会记住上次使用的数据根，若发现数据目录丢失（如磁盘未连接、盘符变化）会引导找回（手动选择 / 全盘搜索），详见 `Services/DataRootLocator.cs`。
 - **数据库**：根目录下 `master.db`（项目列表）；各项目数据在 `ProjectsDate\Project_{id}\data.db`。
 - **附件文件**：`ProjectsDate\Project_{id}\{模块}_{yyyy-MM}\Card_{记录ID}\`，缩略图在 `thumb\` 子目录。
 - **运行日志**：程序目录下 `logs\debug*.log`（按天滚动，保留 7 天）。
@@ -83,11 +84,13 @@ MS_SafetyManagementSystem/
 
 ## 已知事项
 
-- 部分半成品代码被排除编译（`Controls/FluentPopup.cs`、`Controls/WindowMaterial.cs`、备份版 MainWindow），属"未竟尝试"暂存。
+- 半成品代码（`Controls/FluentPopup.cs`、`Controls/WindowMaterial.cs`、备份版 MainWindow）已删除（2026-08-14 清理，csproj 排除项同步移除）。
 - 个别文件较大（如 `ImageViewerWindow.xaml.cs` 约 1500 行、`MainWindow.xaml.cs` 约 1495 行），维护时需注意。
-- 已有单元测试项目（`MSpirit.SafetySys.Tests`，xUnit，89 个用例覆盖数据层核心逻辑）；历史数据可能存在少量附件文件缺失（详见 `docs/ISSUES.md`）。
+- 已有单元测试项目（`MSpirit.SafetySys.Tests`，xUnit，703 个用例覆盖数据层核心逻辑、导入导出链路（Excel/Word）、数据根定位、项目/存档/备份服务、统计/分析视图模型与图片剪裁/标注工具）；历史数据可能存在少量附件文件缺失（详见 `docs/ISSUES.md`）。
 
 ## 开源许可与商业授权
+
+> 当前状态：源代码已托管至作者的**私有仓库**（尚未公开发布），对外开源计划待定；以下许可声明自公开发布时生效。
 
 本项目以 **GNU Affero General Public License v3.0（`AGPL-3.0-or-later`）** 开源发布，版权归 AXin（斜月Spirit）所有，许可证全文见根目录 [`LICENSE`](../LICENSE)。
 
@@ -110,6 +113,7 @@ MS_SafetyManagementSystem/
 - `docs/ISSUES.md` — 已知问题清单与改进建议
 - `docs/数据架构.md` — 数据库表结构、目录布局与路径规则
 - `docs/用户手册.md` — 面向日常使用者的操作说明
+- `docs/LAN服务技术文档.md` — LAN 服务（人员/隐患手机录入、手机图片传输、更新 IPC）架构与协议
 - `docs/更新器使用说明.md` — 更新器（Updater.exe）与更新包制作说明
 - `docs/开源许可中文参考.md` — AGPL-3.0 非官方中文参考译本（法律效力以根目录 `LICENSE` 英文原版为准）
 - `docs/PRIVACY_POLICY.md` — 隐私政策（中英双语，商店上架与开源发布用）

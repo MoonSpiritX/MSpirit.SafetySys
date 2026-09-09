@@ -35,8 +35,8 @@ namespace MS_SafetyManagementSystem
             {
                 new("办公工具", new List<TrayMenuAction>
                 {
-                    new("图片处理", OpenImageProcessFromTray),
-                    new("手机图片传输", () => OpenPhotoTransferWindow(owned: false))
+                    new("手机图片传输", () => OpenPhotoTransferWindow(owned: false)),
+                    new("图片处理", OpenImageProcessFromTray)
                 })
             };
 

@@ -1,0 +1,77 @@
+<UserControl x:Class="MS_SafetyManagementSystem.Tools.CropOverlay"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+    <Grid x:Name="RootGrid" Background="Transparent" ClipToBounds="True">
+        <Image x:Name="PreviewImageControl" Stretch="Uniform"/>
+
+        <!-- 裁剪交互层：遮罩 + 选区边框 + 8 手柄。
+             必须设 Background="Transparent"：WPF 中 Panel 背景为 null 时空白区不参与命中测试，
+             选区内部点击会穿透到下层 Image，Preview 鼠标事件不经过本 Canvas → 平移/悬停光标失效。
+             透明背景参与命中，选区内部才能路由到 OnCanvasMouseDown/Move（2026-08-16 修复）。 -->
+        <Canvas x:Name="OverlayCanvas" Background="Transparent" ClipToBounds="True">
+            <!-- 遮罩（选区外半透明黑，四块拼"挖孔"） -->
+            <Rectangle x:Name="MaskLeft"   Fill="#66000000" Visibility="Collapsed"/>
+            <Rectangle x:Name="MaskRight"  Fill="#66000000" Visibility="Collapsed"/>
+            <Rectangle x:Name="MaskTop"    Fill="#66000000" Visibility="Collapsed"/>
+            <Rectangle x:Name="MaskBottom" Fill="#66000000" Visibility="Collapsed"/>
+
+            <!-- 选区边框 -->
+            <Rectangle x:Name="SelectionRect" Stroke="White" StrokeThickness="1.5"
+                       StrokeDashArray="1,0" Visibility="Collapsed"/>
+
+            <!-- 8 手柄（白框 + 蓝填充） -->
+            <Rectangle x:Name="HandleTL" Fill="#3B8EF6" Stroke="White" StrokeThickness="1" Width="9" Height="9" Visibility="Collapsed"/>
+            <Rectangle x:Name="HandleT"  Fill="#3B8EF6" Stroke="White" StrokeThickness="1" Width="9" Height="9" Visibility="Collapsed"/>
+            <Rectangle x:Name="HandleTR" Fill="#3B8EF6" Stroke="White" StrokeThickness="1" Width="9" Height="9" Visibility="Collapsed"/>
+            <Rectangle x:Name="HandleR"  Fill="#3B8EF6" Stroke="White" StrokeThickness="1" Width="9" Height="9" Visibility="Collapsed"/>
+            <Rectangle x:Name="HandleBR" Fill="#3B8EF6" Stroke="White" StrokeThickness="1" Width="9" Height="9" Visibility="Collapsed"/>
+            <Rectangle x:Name="HandleB"  Fill="#3B8EF6" Stroke="White" StrokeThickness="1" Width="9" Height="9" Visibility="Collapsed"/>
+            <Rectangle x:Name="HandleBL" Fill="#3B8EF6" Stroke="White" StrokeThickness="1" Width="9" Height="9" Visibility="Collapsed"/>
+            <Rectangle x:Name="HandleL"  Fill="#3B8EF6" Stroke="White" StrokeThickness="1" Width="9" Height="9" Visibility="Collapsed"/>
+        </Canvas>
+
+        <!-- 标注视觉层（2026-08-16 阶段 5）：只放标注 Shape（纯视觉，无需命中）。
+             IsHitTestVisible=False 保持鼠标穿透到 OverlayCanvas（裁剪/标注命中由 OverlayCanvas 分派）。 -->
+        <Canvas x:Name="AnnotationCanvas" Background="Transparent" ClipToBounds="True" IsHitTestVisible="False">
+            <!-- 标注 Shape 由代码重建（RenderAnnotations），此处无静态子元素 -->
+        </Canvas>
+
+        <!-- 标注交互层（2026-08-16 修复）：选中框 + ✕ + 文字输入框。
+             不设 Background（null）→ 空白区不参与命中测试，鼠标穿透到 OverlayCanvas；
+             但子元素（✕ 按钮 / 输入框）自身可交互——若放 AnnotationCanvas（IsHitTestVisible=False）
+             它们会被父链挡住无法点击/聚焦（文本输入与 ✕ 删除失效的根因）。 -->
+        <Canvas x:Name="AnnotationChromeCanvas" ClipToBounds="True">
+            <!-- 选中框：1px 高亮边框（用户确认 2026-08-16） -->
+            <Rectangle x:Name="SelectionHighlight" Stroke="#3B8EF6" StrokeThickness="1.5" Visibility="Collapsed"/>
+            <!-- 选中右上角 ✕ 删除按钮（2026-08-16：平时浅红半透明、悬停深红半透明） -->
+            <Button x:Name="DeleteAnnotationButton" Content="✕" Width="18" Height="18" FontSize="11"
+                    Padding="0" Foreground="White" BorderThickness="0"
+                    Visibility="Collapsed" Click="DeleteAnnotationButton_Click"
+                    ToolTip="删除该标注">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" Background="#66E53935" CornerRadius="3">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#CCD32F2F"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <!-- 文字标注就地输入框（微信同款，2026-08-16 确认；高度 35：2026-08-16 调整，原 28 输入时偏矮） -->
+            <TextBox x:Name="AnnotationTextInput" Width="160" Height="35" FontSize="13"
+                     Visibility="Collapsed" KeyDown="AnnotationTextInput_KeyDown"
+                     LostFocus="AnnotationTextInput_LostFocus"/>
+        </Canvas>
+    </Grid>
+</UserControl>

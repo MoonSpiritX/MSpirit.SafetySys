@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using MS_SafetyManagementSystem.Common;
 using MS_SafetyManagementSystem.Helpers;
 using MS_SafetyManagementSystem.Peoplemanagement;
 using MS_SafetyManagementSystem.Services;
@@ -18,7 +19,7 @@ using Wpf.Ui.Controls;
 
 namespace MS_SafetyManagementSystem.Controls
 {
-    public partial class LanEntryWindow : FluentWindow
+    public partial class LanPersonnelEntryWindow : FluentWindow
     {
         private readonly string _groupId;
         private readonly string _groupName;
@@ -27,7 +28,13 @@ namespace MS_SafetyManagementSystem.Controls
         private readonly QRCodeGenerator _qrGenerator = new();
         private int _entryCount;
 
-        public LanEntryWindow(string groupId, string groupName, string? unitName = null)
+        /// <summary>已连接设备跟踪（三窗口共用，见 Services/LanDeviceTracker.cs；心跳 30s 兜底，正常关页经 /bye 即时移除）</summary>
+        private readonly LanDeviceTracker _deviceTracker = new(TimeSpan.FromSeconds(30));
+
+        private static readonly TimeSpan DeviceSweepInterval = TimeSpan.FromSeconds(5);
+        private System.Windows.Threading.DispatcherTimer? _deviceSweepTimer;
+
+        public LanPersonnelEntryWindow(string groupId, string groupName, string? unitName = null)
         {
             InitializeComponent();
             _groupId = groupId;
@@ -82,6 +89,7 @@ namespace MS_SafetyManagementSystem.Controls
             }
             catch
             {
+                Log.Debug("[LanEntry] 查询单位名称失败（返回空）");
                 return "";
             }
         }
@@ -112,7 +120,7 @@ namespace MS_SafetyManagementSystem.Controls
         private void RefreshIPDisplay()
         {
             var ip = LanService.GetLocalIPAddress();
-            PortText.Text = $"{ip}:5000";
+            PortText.Text = $"{ip}:{LanPorts.Start}";
         }
 
         /// <summary>
@@ -152,6 +160,14 @@ namespace MS_SafetyManagementSystem.Controls
                     return;
                 }
 
+                // 首次使用引导：检测防火墙放行（程序级阻止规则/放行规则），缺失则弹引导窗口。
+                // 返回 false 不阻断：手机首次连接时 Windows 会弹「是否允许访问网络」窗口，点允许即放行。
+                if (!LanFirewallService.EnsureFirewallAccess(this))
+                    ToastService.Show("未自动放行：手机首次连接时，Windows 会弹出\n" +
+                        "『是否允许访问网络』窗口，请务必点【允许访问】。\n" +
+                        "若点【取消】会生成阻止规则导致无法连接，\n" +
+                        "可停止服务重新启动后选『立即解除阻止』。", this, 3000);
+
                 // 获取 OCR 服务实例（复用 PersonnelRecordCardView 的初始化逻辑）
                 var ocrService = PersonnelRecordCardView.GetOcrService();
 
@@ -162,15 +178,23 @@ namespace MS_SafetyManagementSystem.Controls
                 };
                 _lanService.RecordConfirmed += OnRecordConfirmed;
                 _lanService.PendingUpdated += OnPendingUpdated;
+                _deviceTracker.Reset();
+                DeviceCountText.Text = "0";
+                _lanService.DeviceConnected += OnDeviceConnected;
+                _lanService.DeviceLeft += OnDeviceLeft;
+                _deviceSweepTimer = new System.Windows.Threading.DispatcherTimer { Interval = DeviceSweepInterval };
+                _deviceSweepTimer.Tick += (s, e) => SweepDisconnectedDevices();
+                _deviceSweepTimer.Start();
 
-                // 自动寻找可用端口：从 5000 开始递增尝试 Start()
-                int port = StartOnAvailablePort(5000);
+                // 自动寻找可用端口：从 LanPorts.Start 开始递增尝试 Start()（共用 LanPortProbe，捕获含 SocketException）
+                int port = LanPortProbe.FindAvailable(LanPorts.Start, p => _lanService!.Start(p));
                 if (port < 0)
                 {
-                    System.Windows.MessageBox.Show("无法找到可用端口（5000-5099 均被占用）", "错误",
+                    System.Windows.MessageBox.Show($"无法找到可用端口（{LanPorts.Start}-{LanPorts.ProbeEnd} 均被占用）", "错误",
                         System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                     return;
                 }
+                Log.Information("LanPersonnelEntryWindow: 端口探测成功：{Port}（绑定 IP={Ip}）", port, _lanService.BoundIpAddress);
 
                 // 更新 UI 状态
                 StatusIndicator.Fill = System.Windows.Media.Brushes.LimeGreen;
@@ -181,7 +205,7 @@ namespace MS_SafetyManagementSystem.Controls
 
                 GenerateQRCode();
 
-                Log.Information("LanEntryWindow: 服务已启动，部门={GroupName}", _groupName);
+                Log.Information("LanPersonnelEntryWindow: 服务已启动，部门={GroupName}", _groupName);
             }
             catch (Exception ex)
             {
@@ -203,6 +227,8 @@ namespace MS_SafetyManagementSystem.Controls
                 {
                     _lanService.RecordConfirmed -= OnRecordConfirmed;
                     _lanService.PendingUpdated -= OnPendingUpdated;
+                    _lanService.DeviceConnected -= OnDeviceConnected;
+                    _lanService.DeviceLeft -= OnDeviceLeft;
                     _lanService.Stop();
                     _lanService.Dispose();
                     _lanService = null;
@@ -210,10 +236,19 @@ namespace MS_SafetyManagementSystem.Controls
             }
             catch (Exception ex)
             {
-                Log.Warning(ex, "LanEntryWindow: 停止服务时出现异常");
+                Log.Warning(ex, "LanPersonnelEntryWindow: 停止服务时出现异常");
             }
             finally
             {
+                // 停止服务：停止心跳扫描、已连接设备归零（设备集合为本次服务会话的）
+                if (_deviceSweepTimer != null)
+                {
+                    _deviceSweepTimer.Stop();
+                    _deviceSweepTimer = null;
+                }
+                _deviceTracker.Reset();
+                DeviceCountText.Text = "0";
+
                 StatusIndicator.Fill = System.Windows.Media.Brushes.Gray;
                 StatusText.Text = "服务未启动";
                 StartButton.IsEnabled = true;
@@ -224,33 +259,16 @@ namespace MS_SafetyManagementSystem.Controls
         }
 
         /// <summary>
-        /// 从 startPort 开始递增尝试启动 LanService，返回成功绑定的端口号。
-        /// 用实际的 HttpListener.Start() 检测，比 TCP 探测更准确。
+        /// 端口探测已抽到 <see cref="LanPortProbe.FindAvailable"/>（三窗口共用，见 Services/LanPortProbe.cs）：
+        /// 从 LanPorts.Start 递增尝试启动，捕获 Kestrel 绑定失败（含 Windows 保留端口的 SocketException），
+        /// 范围与 LanPorts.ProbeEnd 对齐（不再硬编码 +100），防火墙放行范围覆盖整个探测范围。
         /// </summary>
-        private int StartOnAvailablePort(int startPort)
-        {
-            for (int port = startPort; port < startPort + 100; port++)
-            {
-                try
-                {
-                    _lanService!.Start(port);
-                    return port;
-                }
-                catch (Exception ex) when (ex is IOException or InvalidOperationException or System.Net.HttpListenerException)
-                {
-                    // 端口绑定失败（占用等），继续尝试下一个
-                    Log.Information("LanEntryWindow: 端口 {Port} 不可用，尝试下一个", port);
-                    continue;
-                }
-            }
-            return -1;
-        }
 
         /// <summary>生成 QR 码</summary>
         private void GenerateQRCode()
         {
             string boundIp = _lanService?.BoundIpAddress ?? LanService.GetLocalIPAddress();
-            int port = _lanService?.Port ?? 5000;
+            int port = _lanService?.Port ?? LanPorts.Start;
             string url = $"http://{boundIp}:{port}/?groupId={_groupId}&groupName={Uri.EscapeDataString(_groupName)}&unitName={Uri.EscapeDataString(_unitName)}&token={_lanService?.Token}";
 
             var qrData = _qrGenerator.CreateQrCode(url, QRCodeGenerator.ECCLevel.Q);
@@ -268,7 +286,7 @@ namespace MS_SafetyManagementSystem.Controls
             QRCodeImage.Visibility = Visibility.Visible;
             QRPlaceholder.Visibility = Visibility.Collapsed;
 
-            Log.Information("LanEntryWindow: QR码已生成，URL={Url}", url);
+            Log.Information("LanPersonnelEntryWindow: QR码已生成，URL={Url}", url);
         }
 
         /// <summary>确认记录后回调</summary>
@@ -296,6 +314,35 @@ namespace MS_SafetyManagementSystem.Controls
         private void OnPendingUpdated()
         {
             // 目前仅用于计数，可扩展显示待处理数
+        }
+
+        /// <summary>任何授权请求到达服务时触发（参数：来源 IP）——记录心跳并统计"已连接设备"</summary>
+        private void OnDeviceConnected(string ip)
+        {
+            if (string.IsNullOrEmpty(ip)) return;
+            Dispatcher.Invoke(() =>
+            {
+                _deviceTracker.OnConnected(ip);
+                DeviceCountText.Text = _deviceTracker.Count.ToString();
+            });
+        }
+
+        /// <summary>手机页面关闭上报（/bye）→ 立即从已连接设备移除（无需等心跳超时）</summary>
+        private void OnDeviceLeft(string ip)
+        {
+            if (string.IsNullOrEmpty(ip)) return;
+            Dispatcher.Invoke(() =>
+            {
+                if (_deviceTracker.OnLeft(ip))
+                    DeviceCountText.Text = _deviceTracker.Count.ToString();
+            });
+        }
+
+        /// <summary>周期扫描：把超过超时无请求的设备从计数中移除（beacon 失败兜底）</summary>
+        private void SweepDisconnectedDevices()
+        {
+            if (_deviceTracker.Sweep())
+                DeviceCountText.Text = _deviceTracker.Count.ToString();
         }
     }
 }

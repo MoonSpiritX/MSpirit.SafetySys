@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 AXin（斜月Spirit）
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using ClosedXML.Excel;
@@ -53,7 +53,7 @@ namespace MS_SafetyManagementSystem.Export
                 // 1. 定位表头行
                 var headerRow = FindHeaderRow(worksheet);
                 if (headerRow == null)
-                    return (false, "未找到有效的表头行（至少匹配两个字段）");
+                    return (false, "未检测到有效的表头行（文档内容至少需两个字段）");
 
                 // 2. 构建列映射
                 var columnMapping = BuildColumnMapping(headerRow);
@@ -259,7 +259,12 @@ namespace MS_SafetyManagementSystem.Export
         }
 
         /// <summary>
-        /// 找到连续数据区域的最后一行（从 startRow 开始，直到空行或底部关键词行）
+        /// 找到模板中示例数据区域的最后一行（模板数据行将被删除后重写）。
+        /// 规则（2026-08-14 与 ExcelSmartImporter 同步修复：数据行优先，避免示例数据单元格
+        /// 以"日期/审核/注："等底部关键词开头时被误判为底部说明行而截断，导致旧数据删不干净）：
+        ///  - 行内任一映射列有文本 → 数据行，继续扫描；
+        ///  - 非数据行且行内有任何内容（底部说明行、落款、非映射列内容等）→ 结构边界，停止读取；
+        ///  - 完全空行不会出现在 RowsUsed() 中，天然跳过（避免中间空行截断数据）。
         /// </summary>
         private int FindLastDataRow(IXLWorksheet worksheet, int startRow, Dictionary<int, string> columnMapping)
         {
@@ -267,26 +272,13 @@ namespace MS_SafetyManagementSystem.Export
             var usedRows = worksheet.RowsUsed().Where(r => r.RowNumber() >= startRow).OrderBy(r => r.RowNumber());
             foreach (var row in usedRows)
             {
-                // 检查是否为底部说明行（精确匹配关键词）
-                bool isBottomRow = false;
-                foreach (var cell in row.CellsUsed())
-                {
-                    string text = cell.GetString().Trim();
-                    if (text.StartsWith("填表") || text.StartsWith("审核") || text.StartsWith("日期") ||
-                        text.StartsWith("注：") || text.StartsWith("编制") || text.StartsWith("审批") ||
-                        text.Contains("建设单位负责人") || text.Contains("监理单位负责人") || text.Contains("施工单位负责人") || text.Contains("单位负责人"))
-                    {
-                        isBottomRow = true;
-                        break;
-                    }
-                }
-                if (isBottomRow)
-                    break;
-
-                // 检查该行是否有数据（至少一个映射列非空）
+                // 数据行判定：任一映射列（排除序号列，序号仅是占位不算数据）有文本
+                //（模板数据行均为文本，无需考虑嵌入图片）
                 bool hasData = false;
                 foreach (var col in columnMapping.Keys)
                 {
+                    if (columnMapping[col] == "RowNumber")
+                        continue;
                     var cell = row.Cell(col);
                     if (!string.IsNullOrWhiteSpace(cell.GetString()))
                     {
@@ -296,9 +288,13 @@ namespace MS_SafetyManagementSystem.Export
                 }
 
                 if (hasData)
+                {
                     lastDataRow = row.RowNumber();
-                else
-                    break;
+                    continue;
+                }
+
+                // 非数据行：行内有内容（底部说明行/落款/非映射列内容）→ 结构边界，停止读取
+                break;
             }
             return lastDataRow;
         }

@@ -125,7 +125,7 @@ namespace MS_SafetyManagementSystem.Export
 
             lines.Add($"源文件：{Path.GetFileName(result.SourceFilePath)}");
             lines.Add($"文件类型：{result.SourceFileType}");
-            lines.Add($"匹配字段：{result.MatchedFieldCount} 个（{string.Join("、", result.FieldColumnCount.Keys)}）");
+            lines.Add($"检测文档内容：识别到 {result.MatchedFieldCount} 个字段（{string.Join("、", result.FieldColumnCount.Keys)}）");
             lines.Add($"有效数据：{result.ValidRowCount} 条");
             lines.Add($"无效数据：{result.InvalidRowIndices.Count} 条");
 

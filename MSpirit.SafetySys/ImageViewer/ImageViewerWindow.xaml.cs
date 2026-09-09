@@ -310,6 +310,7 @@ namespace MS_SafetyManagementSystem.ImageViewer
             }
             catch
             {
+                Log.Debug("读取图片宽度失败: {Path}", filePath);
                 return int.MaxValue;
             }
         }
@@ -323,6 +324,7 @@ namespace MS_SafetyManagementSystem.ImageViewer
             }
             catch
             {
+                Log.Debug("读取图片尺寸失败: {Path}", filePath);
                 return (0, 0);
             }
         }
@@ -485,6 +487,7 @@ namespace MS_SafetyManagementSystem.ImageViewer
             }
             catch
             {
+                Log.Debug("首图加载失败（仍放行加载完成信号）");
                 _firstImageLoadedTcs.TrySetResult(true);
             }
         }
@@ -755,6 +758,7 @@ namespace MS_SafetyManagementSystem.ImageViewer
             }
             catch
             {
+                Log.Debug("获取文件大小失败: {Path}", filePath);
                 _cachedFileName = Path.GetFileName(filePath);
                 _cachedFileSizeStr = "?";
             }

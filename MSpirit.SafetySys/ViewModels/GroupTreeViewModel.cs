@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 AXin（斜月Spirit）
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -117,6 +117,10 @@ namespace MS_SafetyManagementSystem.ViewModels
         {
             try
             {
+                // 保存当前选中节点（按 Id），树重建后恢复选中并触发 SelectedNode setter 重载记录列表
+                // （2026-08-14 修复：原逻辑重建树后不恢复选中，右侧记录列表保持旧数据，需切模块才刷新）
+                string? prevSelectedId = SelectedNode?.Id;
+
                 RootNodes.Clear();
                 var dataService = _owner.GetProjectDataService();
                 if (dataService == null)
@@ -146,8 +150,16 @@ namespace MS_SafetyManagementSystem.ViewModels
                 // 刷新所有节点的菜单项
                 RefreshAllNodeMenus();
 
+                // 树重建后：恢复原选中节点（仍在树中则重载其记录；已被删除则清空选中）
                 if (RootNodes.Count == 0)
+                {
                     SelectedNode = null;
+                }
+                else if (!string.IsNullOrEmpty(prevSelectedId))
+                {
+                    var restored = FindNodeById(prevSelectedId);
+                    SelectedNode = restored;   // setter 内部按模块 LoadRecords，刷新右侧记录列表
+                }
 
                 Log.Information("LoadGroups: 构建树完成，根节点数 {Count}", RootNodes.Count);
             }

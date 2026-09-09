@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 AXin（斜月Spirit）
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using Microsoft.Data.Sqlite;
@@ -60,7 +60,34 @@ namespace MS_SafetyManagementSystem
 
             Log.Information("=== 斜月安全管理系统启动 ===");
 
-            var dataPathService = new DataPathService();
+            // ── 数据根决策（2026-08-15）：记录 → 浅扫 → 首启 → 弹窗引导 ──
+            // 解决拔盘/盘符变化导致数据根"漂移"问题：启动早期确定一次数据根并全局共享，
+            // 各处通过 AppServiceProvider.GetDataPathService() 获取，不再各自 new 计算。
+            string? rootPath = DataRootLocator.ResolveRootPath();
+            if (rootPath == null)
+            {
+                // 疑似丢失（有记录但失效且浅扫无果）：弹窗引导用户恢复
+                var recovery = new Views.DataRootRecoveryWindow(DataRootLocator.ReadRecordedRoot() ?? "");
+                recovery.ShowDialog();
+                if (recovery.SelectedRootPath != null)
+                {
+                    rootPath = recovery.SelectedRootPath;
+                    DataRootLocator.WriteRecordedRoot(rootPath);
+                }
+                else if (recovery.UseNewLocation)
+                {
+                    rootPath = DataPathService.DefaultRootPath();
+                    DataRootLocator.WriteRecordedRoot(rootPath);
+                }
+                else
+                {
+                    // 用户直接关闭窗口（未做选择）→ 保守用默认路径但不写记录，下次启动仍会提示
+                    rootPath = DataPathService.DefaultRootPath();
+                }
+            }
+
+            var dataPathService = new DataPathService(rootPath);
+            AppServiceProvider.DataPathService = dataPathService;
             var settingsService = new SettingsService(dataPathService);
             AppServiceProvider.SettingsService = settingsService;
 
@@ -126,7 +153,7 @@ namespace MS_SafetyManagementSystem
         {
             SingleInstanceGuard.Release();
             // 清理主数据库连接池（2026-08-10 目录调整：master.db 位于 ProjectsDate\）
-            var dataPathService = new DataPathService();
+            var dataPathService = AppServiceProvider.GetDataPathService();
             var masterDbPath = Path.Combine(dataPathService.RootPath, "ProjectsDate", "master.db");
             if (File.Exists(masterDbPath))
             {

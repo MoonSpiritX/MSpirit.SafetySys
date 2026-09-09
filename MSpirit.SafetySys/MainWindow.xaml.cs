@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 AXin（斜月Spirit）
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using Hardcodet.Wpf.TaskbarNotification;
@@ -90,7 +90,7 @@ namespace MS_SafetyManagementSystem
         public MainWindow(SettingsService settingsService)
         {
             _settingsService = settingsService;
-            var dataPathService = new DataPathService();
+            var dataPathService = AppServiceProvider.GetDataPathService();
             _configManager = new ConfigManager(dataPathService.RootPath);
             _commonHazardTypeService = new CommonHazardTypeService(dataPathService.RootPath);
             AppServiceProvider.CommonHazardTypeService = _commonHazardTypeService;
@@ -199,7 +199,7 @@ namespace MS_SafetyManagementSystem
             {
                 try
                 {
-                    var dataPathService = new DataPathService();
+                    var dataPathService = AppServiceProvider.GetDataPathService();
                     var rootPath = dataPathService.RootPath;
                     System.Threading.Tasks.Task.Run(() =>
                     {
@@ -219,7 +219,7 @@ namespace MS_SafetyManagementSystem
         {
             await Task.Run(() =>
             {
-                var dataPathService = new DataPathService();
+                var dataPathService = AppServiceProvider.GetDataPathService();
                 string cacheRoot = Path.Combine(dataPathService.RootPath, "ProjectsCache");
                 if (!Directory.Exists(cacheRoot)) return;
 

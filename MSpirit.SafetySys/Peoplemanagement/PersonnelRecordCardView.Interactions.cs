@@ -303,12 +303,12 @@ namespace MS_SafetyManagementSystem.Peoplemanagement
 
                 if (!mergedResult.HasAnyField)
                 {
-                    MessageDialog.Show("未能从图片中提取有效字段，请重试或手动填写。", "提示");
+                    MessageDialog.Show("未能从图片中提取有效信息，请重试或手动填写。", "提示");
                     return;
                 }
 
                 string slotInfo = validSlots.Count == 2 ? "正面+背面" : $"槽位{validSlots[0].Slot}";
-                string confirmMsg = $"已识别到以下字段（{slotInfo}）：\n{mergedResult.ToConfirmText(true)}\n\n是否填入记录卡对应字段？";
+                string confirmMsg = $"已识别到以下信息（{slotInfo}）：\n{mergedResult.ToConfirmText(true)}\n\n是否填入记录卡对应信息？";
                 if (MessageDialog.Confirm(confirmMsg, "确认填入") != true)
                     return;
 

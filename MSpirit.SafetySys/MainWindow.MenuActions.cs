@@ -91,7 +91,7 @@ namespace MS_SafetyManagementSystem
         {
             for (int i = System.Windows.Application.Current.Windows.Count - 1; i >= 0; i--)
             {
-                if (System.Windows.Application.Current.Windows[i] is Controls.LanEntryWindow or Controls.HazardLanEntryWindow)
+                if (System.Windows.Application.Current.Windows[i] is Controls.LanPersonnelEntryWindow or Controls.LanHazardEntryWindow)
                     System.Windows.Application.Current.Windows[i].Close();
             }
         }
@@ -115,7 +115,7 @@ namespace MS_SafetyManagementSystem
         private void OnManageLinks_Click(object sender, RoutedEventArgs e)
         {
             ForceClearFocusAndSave();
-            var dataPathService = new DataPathService();
+            var dataPathService = AppServiceProvider.GetDataPathService();
             var linksService = new FavoriteLinksService(dataPathService.RootPath);
             var window = new ManageLinksWindow(linksService);
             window.Owner = this;

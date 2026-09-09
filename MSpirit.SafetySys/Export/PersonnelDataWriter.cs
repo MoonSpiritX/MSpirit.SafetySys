@@ -167,33 +167,42 @@ namespace MS_SafetyManagementSystem.Export
                         nextIndex = dataService.GetMaxPersonnelDisplayIndex(targetGroupId) + 1;
                     }
                     nextIndexByGroup[targetGroupId] = nextIndex + 1;
+                    // 2. 构建 Record 对象（2026-08-14 修复问题5：有效期区间解析、字段名对齐）
+                    var idPeriod = ResolvePeriod(row, "IDCardStart", "IDCardEnd", "IDCardValidPeriod");
+                    var certPeriod = ResolvePeriod(row, "CertStart", "CertEnd", "CertValidPeriod");
                     var record = new PersonnelRecord
                     {
                         Id = Guid.NewGuid().ToString("N"),
                         GroupId = targetGroupId,
-                        Title = row.TextValues.TryGetValue("Title", out var t) ? t : "",
-                        Gender = row.TextValues.TryGetValue("Gender", out var g) ? g : "",
-                        Age = row.TextValues.TryGetValue("Age", out var a) ? a : "",
-                        EmployeeID = row.TextValues.TryGetValue("EmployeeID", out var eid) ? eid : "",
-                        Position = row.TextValues.TryGetValue("Position", out var pos) ? pos : "",
-                        PhoneNumber = row.TextValues.TryGetValue("PhoneNumber", out var pn) ? pn : "",
-                        EducationLevel = row.TextValues.TryGetValue("EducationLevel", out var el) ? el : "",
-                        NativePlace = row.TextValues.TryGetValue("NativePlace", out var np) ? np : "",
-                        BirthDate = row.TextValues.TryGetValue("BirthDate", out var bd) ? bd
-                            : (row.TextValues.TryGetValue("HomeAddress", out var ha) ? ha : ""),
-                        EntryTime = row.TextValues.TryGetValue("EntryTime", out var et) ? et : "",
-                        EduTime = row.TextValues.TryGetValue("EduTime", out var edt) ? edt : "",
-                        ExitTime = row.TextValues.TryGetValue("ExitTime", out var ext) ? ext : "",
-                        IDCardDocNumber = row.TextValues.TryGetValue("IDCardDocNumber", out var idn) ? idn : "",
-                        IDCardStart = row.TextValues.TryGetValue("IDCardStart", out var ids) ? ids : "",
-                        IDCardEnd = row.TextValues.TryGetValue("IDCardEnd", out var ide) ? ide : "",
-                        CertName = row.TextValues.TryGetValue("CertName", out var cn) ? cn : "",
-                        CertDocNumber = row.TextValues.TryGetValue("CertDocNumber", out var cdn) ? cdn : "",
-                        CertStart = row.TextValues.TryGetValue("CertStart", out var cs) ? cs : "",
-                        CertEnd = row.TextValues.TryGetValue("CertEnd", out var ce) ? ce : "",
-                        ThreeCategoryPersonnel = TryParseBool(row.TextValues.TryGetValue("ThreeCategoryPersonnel", out var tcp) ? tcp : "", false),
-                        SpecialOperationsPersonnel = TryParseBool(row.TextValues.TryGetValue("SpecialOperationsPersonnel", out var sop) ? sop : "", false),
-                        Remark = row.TextValues.TryGetValue("Remark", out var rm) ? rm : "",
+                        Title = GetText(row, "Title"),
+                        Gender = GetText(row, "Gender"),
+                        Age = GetText(row, "Age"),
+                        EmployeeID = GetText(row, "EmployeeID"),
+                        Position = GetText(row, "Position"),
+                        PhoneNumber = GetText(row, "PhoneNumber"),
+                        EducationLevel = GetText(row, "EducationLevel"),
+                        NativePlace = GetText(row, "NativePlace"),
+                        BirthDate = GetText(row, "BirthDate"),
+                        EntryTime = GetText(row, "EntryTime"),
+                        EduTime = GetText(row, "EduTime"),
+                        ExitTime = GetText(row, "ExitTime"),
+                        IDCardDocNumber = GetText(row, "IDCardDocNumber"),
+                        IDCardStart = idPeriod.start,
+                        IDCardEnd = idPeriod.end,
+                        // 证书信息：单数字段（统计/附件复制用）与 Cert1 槽位（卡片 UI 显示用）同步写入
+                        CertName = GetText(row, "CertName"),
+                        CertDocNumber = GetText(row, "CertDocNumber") is { Length: > 0 } cd ? cd : GetText(row, "CertNumber"),
+                        CertStart = certPeriod.start,
+                        CertEnd = certPeriod.end,
+                        Cert1Name = GetText(row, "CertName"),
+                        Cert1DocNumber = GetText(row, "CertDocNumber") is { Length: > 0 } cd2 ? cd2 : GetText(row, "CertNumber"),
+                        Cert1Start = certPeriod.start,
+                        Cert1End = certPeriod.end,
+                        ThreeCategoryPersonnel = TryParseBool(
+                            GetText(row, "ThreeCategoryPersonnel") is { Length: > 0 } tcp ? tcp : GetText(row, "ThreeCategoryPersonnelDisplay"), false),
+                        SpecialOperationsPersonnel = TryParseBool(
+                            GetText(row, "SpecialOperationsPersonnel") is { Length: > 0 } sop ? sop : GetText(row, "SpecialOperationsPersonnelDisplay"), false),
+                        Remark = GetText(row, "Remark"),
                         CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                         DisplayIndex = nextIndex,
                         YearMonth = DateTime.Now.ToString("yyyy-MM")
@@ -265,10 +274,11 @@ namespace MS_SafetyManagementSystem.Export
                                         MimeType = "image/jpeg",
                                         AttachmentType = attachmentType,
                                         DisplayOrder = displayOrder,
-                                        CertNumber = attachmentType == PersonnelConstants.AttachmentTypeCertificate ? (row.TextValues.TryGetValue("CertDocNumber", out var cdn2) ? cdn2 : null) : null,
-                                        CertName = attachmentType == PersonnelConstants.AttachmentTypeCertificate ? (row.TextValues.TryGetValue("CertName", out var cn2) ? cn2 : null) : null,
-                                        CertStart = attachmentType == PersonnelConstants.AttachmentTypeCertificate ? (row.TextValues.TryGetValue("CertStart", out var cs2) ? cs2 : null) : null,
-                                        CertEnd = attachmentType == PersonnelConstants.AttachmentTypeCertificate ? (row.TextValues.TryGetValue("CertEnd", out var ce2) ? ce2 : null) : null
+                                        // 2026-08-14 修复：证书信息读映射后的字段（CertNumber）与已解析的有效期（certPeriod）
+                                        CertNumber = attachmentType == PersonnelConstants.AttachmentTypeCertificate ? (GetText(row, "CertDocNumber") is { Length: > 0 } cdn2 ? cdn2 : GetText(row, "CertNumber")) : null,
+                                        CertName = attachmentType == PersonnelConstants.AttachmentTypeCertificate ? GetText(row, "CertName") : null,
+                                        CertStart = attachmentType == PersonnelConstants.AttachmentTypeCertificate ? certPeriod.start : null,
+                                        CertEnd = attachmentType == PersonnelConstants.AttachmentTypeCertificate ? certPeriod.end : null
                                     };
                                     dataService.AddAttachment(attachment);
                                 }
@@ -426,6 +436,31 @@ namespace MS_SafetyManagementSystem.Export
             };
 
             return dataService.AddGroup(newDept) ? newDept.Id : "";
+        }
+
+        /// <summary>取行内某字段文本（缺失返回空串）</summary>
+        private static string GetText(ImportRowData row, string field)
+            => row.TextValues.TryGetValue(field, out var v) ? v : "";
+
+        /// <summary>
+        /// 解析有效期区间：优先行内已有的起止字段（未来 Mapping 扩展后），否则从区间文本字段解析；
+        /// 解析失败时原样保存至起始字段（保守不丢数据，记日志）。
+        /// </summary>
+        private static (string start, string end) ResolvePeriod(
+            ImportRowData row, string startField, string endField, string periodField)
+        {
+            string s = GetText(row, startField);
+            string e = GetText(row, endField);
+            if (!string.IsNullOrEmpty(s) || !string.IsNullOrEmpty(e))
+                return (s, e);
+
+            if (PersonnelHelper.TryParseValidPeriod(GetText(row, periodField), out var st, out var en))
+                return (st, en);
+
+            string raw = GetText(row, periodField);
+            if (!string.IsNullOrEmpty(raw))
+                Log.Warning("人员导入：{Field} 有效期 \"{Raw}\" 无法解析，已原样保存至起始日期", periodField, raw);
+            return (raw, "");
         }
 
         private static bool TryParseBool(string value, bool defaultValue)

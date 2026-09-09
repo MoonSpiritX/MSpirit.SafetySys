@@ -401,6 +401,7 @@ namespace MS_SafetyManagementSystem.Controls
             }
             catch
             {
+                Serilog.Log.Debug("[DropdownMenu] 获取鼠标位置失败（视为不在元素上）");
                 return false;
             }
             return p.X >= 0 && p.Y >= 0 && p.X <= element.ActualWidth && p.Y <= element.ActualHeight;

@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 AXin（斜月Spirit）
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -171,11 +171,15 @@ namespace MS_SafetyManagementSystem.ViewModels
             if (sourceRecords.Count == 0)
             {
                 Log.Information("PersonnelStatistics: 范围 {Scope} 下无人员记录", _selectedUnit);
-                dispatcher?.Invoke(() =>
+                // 2026-08-15 修复：dispatcher 为 null（无 UI 环境，如单元测试/后台）时直接执行，
+                // 避免数据被静默丢弃
+                Action clear = () =>
                 {
                     _allRows.Clear();
                     Rows.Clear();
-                });
+                };
+                if (dispatcher != null) dispatcher.Invoke(clear);
+                else clear();
                 return;
             }
 
@@ -224,11 +228,14 @@ namespace MS_SafetyManagementSystem.ViewModels
                 rows.Add(row);
             }
 
-            dispatcher?.Invoke(() =>
+            // 2026-08-15 修复：dispatcher 为 null（无 UI 环境）时直接执行，避免数据被静默丢弃
+            Action apply = () =>
             {
                 _allRows = rows;
                 ApplyFilters();
-            });
+            };
+            if (dispatcher != null) dispatcher.Invoke(apply);
+            else apply();
         }
 
         /// <summary>

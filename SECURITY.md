@@ -9,6 +9,8 @@
 
 ## 报告安全漏洞
 
+> 当前仓库为**私有仓库**（尚未公开发布），Issue 区仅作者可见；仓库公开前请直接联系作者报告（联系方式见 `docs/PRIVACY_POLICY.md`），仓库公开后可使用以下渠道。
+
 请通过以下任一方式报告：
 
 - **首选**：GitHub 私有漏洞报告（Private vulnerability reporting，若仓库已启用该功能）

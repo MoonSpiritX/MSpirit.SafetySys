@@ -21,21 +21,15 @@ namespace MS_SafetyManagementSystem.Services
     /// <summary>
     /// 隐患手机录入 HTTP 服务（基于 Kestrel，零 UAC 绑定）。
     /// 手机扫码拍照录入隐患信息，不涉及 OCR。
+    /// 托管骨架/鉴权/设备事件继承自 <see cref="LanServiceBase"/>（2026-08-16 抽取）。
     /// </summary>
-    public class HazardLanService : IDisposable
+    public class HazardLanService : LanServiceBase
     {
         private readonly ProjectDataService _dataService;
         private readonly string _yearMonth;
         private readonly string _groupName;
         private readonly ConcurrentDictionary<string, string> _photoCache = new(); // tempId -> filePath
-        private int _port;
-        private bool _running;
-        private string _boundIpAddress = "127.0.0.1";
-        private CancellationTokenSource? _cts;
-        private WebApplication? _app;
         private int _entryCount;
-        private readonly string _htmlPage;
-        private string _token = "";
         private const int StaleTempTtlMinutes = 30;   // 残留临时目录 TTL（分钟）
 
         public string GroupName => _groupName;
@@ -44,127 +38,54 @@ namespace MS_SafetyManagementSystem.Services
         /// <summary>确认记录后触发（参数：groupId, recordId）</summary>
         public event Action<string, string>? RecordConfirmed;
 
-        public bool IsRunning => Volatile.Read(ref _running);
-        public int Port => _port;
-        public string BoundIpAddress => _boundIpAddress;
-        public string Token => _token;
         public int EntryCount => Volatile.Read(ref _entryCount);
 
-        public HazardLanService(ProjectDataService dataService, string yearMonth, string groupName)
+        protected override string ApplicationName => "HazardLanService";
+        protected override string LogPrefix => "HazardLan";
+        protected override string ServiceDisplayName => "隐患录入";
+
+        public HazardLanService(ProjectDataService dataService, string yearMonth, string groupName) : base("hazard_lan_page.html")
         {
             _dataService = dataService ?? throw new ArgumentNullException(nameof(dataService));
             _yearMonth = yearMonth;
             _groupName = groupName;
-            _htmlPage = LoadEmbeddedHtml();
         }
 
-        // ==================== 启动 / 停止 ====================
+        // ==================== 路由注册（Kestrel/鉴权骨架在 LanServiceBase.Start） ====================
 
-        public void Start(int port)
+        protected override void MapRoutes(WebApplication app)
         {
-            if (_running) return;
-            _port = port;
-
-            var lanIp = LanService.GetLocalIPAddress();
-            _boundIpAddress = lanIp;
-            _cts = new CancellationTokenSource();
-
-            // 生成访问令牌（拼入二维码 URL，手机端所有请求需携带）
-            _token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-
-            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
-            {
-                ApplicationName = "HazardLanService",
-                Args = Array.Empty<string>()
-            });
-            builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
-            builder.WebHost.UseKestrel();
-
-            _app = builder.Build();
-
-            // 鉴权中间件：请求必须携带正确 token，否则一律 401（二维码 URL 已含 token）
-            _app.Use(async (ctx, next) =>
-            {
-                if (!IsAuthorized(ctx))
-                {
-                    ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    await ctx.Response.WriteAsJsonAsync(new { ok = false, error = "未授权访问，请重新扫描二维码" });
-                    return;
-                }
-                await next();
-            });
-
             var svc = this;
-            _app.MapGet("/", (HttpContext ctx) => ServePage(ctx));
-            _app.MapGet("/ping", (HttpContext ctx) =>
+            app.MapGet("/", (HttpContext ctx) => ServePage(ctx));
+            app.MapGet("/ping", (HttpContext ctx) =>
                 ctx.Response.WriteAsJsonAsync(new { ok = true, groupName = svc._groupName, yearMonth = svc._yearMonth }));
-            _app.MapGet("/dates", (HttpContext ctx) => HandleDates(ctx));
-            _app.MapPost("/upload-photo", (HttpContext ctx) => HandleUploadPhoto(ctx));
-            _app.MapPost("/submit", (HttpContext ctx) => HandleSubmit(ctx));
+            app.MapGet("/dates", (HttpContext ctx) => HandleDates(ctx));
+            app.MapPost("/upload-photo", (HttpContext ctx) => HandleUploadPhoto(ctx));
+            app.MapPost("/submit", (HttpContext ctx) => HandleSubmit(ctx));
+        }
 
-            // 启动 Kestrel：同步等待绑定完成，端口被占会在此抛出（供端口探测捕获下一个端口）。
-            // 原 fire-and-forget 导致绑定失败不感知、多个服务窗口都显示同一端口（2026-08-12 修复）
-            try
-            {
-                Task.Run(() => _app.StartAsync(_cts.Token)).GetAwaiter().GetResult();
-            }
-            catch
-            {
-                try { _app.DisposeAsync().AsTask().GetAwaiter().GetResult(); } catch { }
-                _app = null;
-                throw;
-            }
-
+        protected override void OnStarted()
+        {
             // 清理之前崩溃/异常退出遗留的孤儿临时目录（超过 TTL 才删，不影响其他窗口较新的照片）
             CleanupStaleTempDirectories();
-
-            Volatile.Write(ref _running, true);
-            Log.Information("HazardLanService started on port {Port} (yearMonth={YM})", port, _yearMonth);
         }
 
-        /// <summary>校验请求是否携带正确的访问令牌（恒定时间比较，防时序攻击）</summary>
-        private bool IsAuthorized(HttpContext ctx)
+        protected override void OnStopped()
         {
-            if (string.IsNullOrEmpty(_token)) return false;
-            string? supplied = ctx.Request.Query["token"].FirstOrDefault();
-            if (string.IsNullOrEmpty(supplied)) return false;
-            var a = Encoding.UTF8.GetBytes(supplied);
-            var b = Encoding.UTF8.GetBytes(_token);
-            return a.Length == b.Length && CryptographicOperations.FixedTimeEquals(a, b);
-        }
-
-        public void Stop()
-        {
-            _cts?.Cancel();
-            Volatile.Write(ref _running, false);
-
-            var app = Interlocked.Exchange(ref _app, null);
-            if (app != null)
-            {
-                _ = Task.Run(() => { try { app.StopAsync(CancellationToken.None).GetAwaiter().GetResult(); } catch { /* 后台服务停止失败可忽略 */ } });
-            }
-
             // 清理本实例未提交照片的临时目录（按缓存路径去重，不影响其他窗口的服务）
+            int cachedCount = _photoCache.Count;
             foreach (var dir in _photoCache.Values
                          .Select(p => Path.GetDirectoryName(p))
                          .Where(d => !string.IsNullOrEmpty(d))
                          .Distinct())
             {
-                LanService.TryDeleteTempDirectory(dir!);
+                TryDeleteTempDirectory(dir!);
             }
             _photoCache.Clear();
-            Log.Information("HazardLanService stopped");
+            Log.Information("HazardLanService stopped（清理照片缓存 {CachedCount} 项，端口 {Port}）", cachedCount, _port);
         }
 
         // ==================== 路由 ====================
-
-        private async Task ServePage(HttpContext ctx)
-        {
-            // 禁止缓存：手机浏览器启发式缓存会加载旧页面导致新功能不生效
-            ctx.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
-            ctx.Response.ContentType = "text/html; charset=utf-8";
-            await ctx.Response.WriteAsync(_htmlPage);
-        }
 
         /// <summary>返回当月日期列表（1~当月天数）</summary>
         private async Task HandleDates(HttpContext ctx)
@@ -186,6 +107,7 @@ namespace MS_SafetyManagementSystem.Services
                 .ToList();
 
             await ctx.Response.WriteAsJsonAsync(new { ok = true, dates, defaultDay });
+            Log.Debug("[HazardLan] 日期列表：yearMonth={YM} 天数={Days} 默认日={DefaultDay}", ym, daysInMonth, defaultDay);
         }
 
         /// <summary>接收隐患/整改照片，存到临时目录</summary>
@@ -193,6 +115,7 @@ namespace MS_SafetyManagementSystem.Services
         {
             var type = ctx.Request.Query["type"].FirstOrDefault() ?? "hazard";
             var tempId = ctx.Request.Query["tempId"].FirstOrDefault() ?? Guid.NewGuid().ToString("N");
+            Log.Debug("[HazardLan] 收到照片上传：type={Type} tempId={TempId}", type, tempId);
 
             if (!LanService.IsValidPhotoType(type))
             {
@@ -226,6 +149,7 @@ namespace MS_SafetyManagementSystem.Services
             await File.WriteAllBytesAsync(filePath, fileData);
 
             _photoCache[$"{tempId}_{type}"] = filePath;
+            Log.Debug("[HazardLan] 照片已暂存：type={Type} tempId={TempId} 路径={Path} 大小={Size}字节", type, tempId, filePath, fileData.Length);
 
             // 上传时顺带自愈：清除历史崩溃残留（与人员服务 CleanupStalePending 同口径）
             CleanupStaleTempDirectories();
@@ -256,6 +180,8 @@ namespace MS_SafetyManagementSystem.Services
             var measure = json.GetProperty("measure").GetString() ?? "";
             var hazardPhotoId = json.GetProperty("hazardPhotoId").GetString() ?? "";
             var remedyPhotoId = json.GetProperty("remedyPhotoId").GetString() ?? "";
+            Log.Debug("[HazardLan] 收到提交：groupId={GroupId} 日期={Day} 级别={Level} 位置={Location} 描述长度={DescLen} 措施长度={MeasLen}",
+                groupId, dateDay, level, location, description.Length, measure.Length);
 
             if (!LanService.IsValidTempId(hazardPhotoId) || !LanService.IsValidTempId(remedyPhotoId))
             {
@@ -311,6 +237,7 @@ namespace MS_SafetyManagementSystem.Services
             // 计算完整日期，查找或创建对应的日期分组
             string fullDate = $"{_yearMonth}-{dateDay:D2}";
             string recordGroupId = _dataService.GetOrCreateDateGroup(_yearMonth, dateDay, null);
+            Log.Debug("[HazardLan] 分组就绪：fullDate={FullDate} recordGroupId={GroupId}", fullDate, recordGroupId);
 
             // 创建隐患记录（设置专用属性字段，RecordCardView XAML 直接双向绑定这些属性）
             var record = new Models.Record
@@ -381,7 +308,8 @@ namespace MS_SafetyManagementSystem.Services
             Interlocked.Increment(ref _entryCount);
             RecordConfirmed?.Invoke(groupId, record.Id);
 
-            Log.Information("HazardLanService: 录入完成 {Title}({Id})", record.Title, record.Id);
+            Log.Information("HazardLanService: 录入完成 {Title}({Id}) 年月={YM} 日期={FullDate} 已录入总数={EntryCount}",
+                record.Title, record.Id, _yearMonth, fullDate, _entryCount);
             await ctx.Response.WriteAsJsonAsync(new
             {
                 ok = true,
@@ -419,8 +347,6 @@ namespace MS_SafetyManagementSystem.Services
             };
             _dataService.AddAttachment(attachment);
         }
-
-        public void Dispose() => Stop();
 
         /// <summary>
         /// 清理崩溃/异常退出遗留的孤儿临时目录：只删除最后写入超过 TTL 的子目录，
@@ -483,19 +409,6 @@ namespace MS_SafetyManagementSystem.Services
             {
                 Log.Warning(ex, "生成缩略图失败: {Path}", sourcePath);
             }
-        }
-
-        private static string LoadEmbeddedHtml()
-        {
-            var htmlPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "hazard_lan_page.html");
-            if (File.Exists(htmlPath))
-                return File.ReadAllText(htmlPath, Encoding.UTF8);
-
-            var srcPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\..\Resources\hazard_lan_page.html");
-            if (File.Exists(srcPath))
-                return File.ReadAllText(srcPath, Encoding.UTF8);
-
-            return "<!DOCTYPE html><html><body><h2>页面加载失败</h2></body></html>";
         }
     }
 }

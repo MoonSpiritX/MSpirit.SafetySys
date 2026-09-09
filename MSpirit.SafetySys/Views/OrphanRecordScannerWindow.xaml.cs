@@ -4,6 +4,7 @@
 using MS_SafetyManagementSystem.Common;
 using MS_SafetyManagementSystem.Models;
 using MS_SafetyManagementSystem.Services;
+using MS_SafetyManagementSystem.Helpers;
 using Serilog;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -29,7 +30,7 @@ namespace MS_SafetyManagementSystem.Views
             InitializeComponent();
             ResultDataGrid.ItemsSource = _records;
 
-            string rootPath = new DataPathService().RootPath;
+            string rootPath = AppServiceProvider.GetDataPathService().RootPath;
             _configManager = new ConfigManager(rootPath);
         }
 

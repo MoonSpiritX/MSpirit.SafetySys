@@ -73,7 +73,9 @@ namespace MS_SafetyManagementSystem.Helpers
                     or System.Windows.Controls.Primitives.DataGridColumnHeader
                     or System.Windows.Controls.ComboBox
                     or System.Windows.Controls.ListBoxItem
-                    or System.Windows.Controls.DataGridCell)
+                    or System.Windows.Controls.DataGridCell
+                    or System.Windows.Controls.TreeViewItem // 裁剪列表项需可选中（2026-08-15）
+                    or MS_SafetyManagementSystem.Tools.CropOverlay) // 裁剪交互区整体豁免拖拽（2026-08-15）
                     return true;
             }
             return false;

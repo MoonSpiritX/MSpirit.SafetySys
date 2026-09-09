@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <!-- 斜月安全管理系统 · 绿色版更新器
        职责：定位程序文件夹（MSpirit.SafetySys.exe 所在目录），解压 .msupd 更新包并按清单对账替换文件。
@@ -15,7 +15,7 @@
     <!-- 产物文件名：Updater.exe -->
     <AssemblyName>Updater</AssemblyName>
     <RootNamespace>MSpirit.SafetySys.Updater</RootNamespace>
-    <Product>斜月安全管理系统（个人版）Beta V1.0</Product>
+    <Product>斜月安全管理系统（个人版）V1.0</Product>
     <ApplicationIcon>斜月安全管理系统.ico</ApplicationIcon>
     <Authors>AXin</Authors>
     <Version>1.0.0.0</Version>

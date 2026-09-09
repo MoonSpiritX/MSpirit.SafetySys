@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 AXin（斜月Spirit）
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using System;
@@ -34,6 +34,8 @@ namespace MS_SafetyManagementSystem.Services
                     }
                     catch
                     {
+                        // 视图状态文件损坏/无法解析：回退默认状态（数据不影响，仅界面状态）
+                        Serilog.Log.Debug("[ViewState] 读取视图状态失败，使用默认状态");
                         _states = new Dictionary<string, ViewStateData>();
                     }
                 }

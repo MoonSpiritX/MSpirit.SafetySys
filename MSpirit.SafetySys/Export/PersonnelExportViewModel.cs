@@ -8,6 +8,7 @@ using MS_SafetyManagementSystem.Common;
 using MS_SafetyManagementSystem.Models;
 using MS_SafetyManagementSystem.Peoplemanagement;
 using MS_SafetyManagementSystem.Services;
+using MS_SafetyManagementSystem.Helpers;
 using MS_SafetyManagementSystem.ViewModels;
 using MS_SafetyManagementSystem.Views;
 using Serilog;
@@ -649,7 +650,7 @@ namespace MS_SafetyManagementSystem.Export
                 contextName += "-" + SelectedDeptText;
             }
 
-            var dataPathService = new DataPathService();
+            var dataPathService = AppServiceProvider.GetDataPathService();
             var mappingService = new MappingDictionaryService(dataPathService.RootPath);
             var provider = new PersonnelExportDataProvider(dataRows, contextName);
 
@@ -737,7 +738,7 @@ namespace MS_SafetyManagementSystem.Export
                 }
             }
 
-            var dataPathService = new DataPathService();
+            var dataPathService = AppServiceProvider.GetDataPathService();
             var mappingService = new MappingDictionaryService(dataPathService.RootPath);
             var manager = new ImportManager(mappingService, "Personnel");
             var writer = new PersonnelDataWriter();
@@ -791,7 +792,7 @@ namespace MS_SafetyManagementSystem.Export
                 }
                 else
                 {
-                    targetDesc = "按文件中单位字段自动匹配";
+                    targetDesc = "按文件中单位字段自动识别";
                 }
                 string preview = manager.BuildPreviewMessage(parseResult, autoAssignByDate, targetDesc);
 

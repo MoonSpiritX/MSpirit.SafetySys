@@ -86,7 +86,7 @@ namespace MS_SafetyManagementSystem.Services
             _fieldMappings = new List<FieldMappingInfo>
             {
                 // ===== 隐患模块字段 =====
-                new FieldMappingInfo { DataField = "Status", StandardName = "进度", Aliases = new List<string> { "状态", "进度", "复查情况", "整改进度", "治理情况" } },
+                new FieldMappingInfo { DataField = "Status", StandardName = "进度", Aliases = new List<string> { "状态", "进度", "复查情况", "整改进度", "整改状态", "治理情况", "治理状况",  } },
                 new FieldMappingInfo { DataField = "RowNumber", StandardName = "序号", Aliases = new List<string> { "序号", "编号", "隐患编号", "问题编号" } },
                 new FieldMappingInfo { DataField = "RecordDate", StandardName = "日期", Aliases = new List<string> { "日期", "检查日期", "记录日期", "问题日期", "隐患日期", "排查时间", "排查日期", "发现日期", "发现时间" } },
                 new FieldMappingInfo { DataField = "ResponsibleUnit", StandardName = "责任单位", Aliases = new List<string> { "责任单位", "所属单位", "负责单位", "责任部门", "队伍名称", "分包单位", "分包队伍" } },
@@ -100,7 +100,7 @@ namespace MS_SafetyManagementSystem.Services
                 new FieldMappingInfo { DataField = "Description", StandardName = "隐患描述", Aliases = new List<string> { "隐患描述", "问题描述", "隐患情况", "隐患内容", "存在问题", "问题情况", "隐患问题描述", "隐患状态描述", "隐患情况描述", "隐患名称", "隐患措施" } },
                 new FieldMappingInfo { DataField = "Measure", StandardName = "整改措施", Aliases = new List<string> { "整改措施", "主要整改措施", "治理措施", "主要治理措施", "整改要求", "处理措施", "整改情况", "整改回复", "回复描述" } },
                 new FieldMappingInfo { DataField = "HazardPhoto", StandardName = "隐患照片", Aliases = new List<string> { "隐患照片", "隐患图片", "问题照片", "问题图片", "整改前照片", "整改前图片" } },
-                new FieldMappingInfo { DataField = "RemedyPhoto", StandardName = "整改照片", Aliases = new List<string> { "整改照片", "整改前照片", "整改后照片", "整改图片", "整改前图片", "整改后图片", "完成照片", "整改完成照片" } },
+                new FieldMappingInfo { DataField = "RemedyPhoto", StandardName = "整改照片", Aliases = new List<string> { "整改照片", "整改图片", "整改后照片", "整改后图片", "完成照片", "整改完成照片" } },
 
                 // ===== 人员模块字段 =====
                 new FieldMappingInfo { DataField = "Title", StandardName = "姓名", Aliases = new List<string> { "姓名", "名字", "人员姓名" } },
