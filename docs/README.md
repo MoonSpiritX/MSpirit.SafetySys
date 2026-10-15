@@ -98,7 +98,8 @@ dotnet publish MS_SafetyManagementSystem.csproj -c Release -r win-x64 --self-con
 
 ```
 MS_SafetyManagementSystem/
-├── LICENSE                 # AGPL-3.0 许可证全文
+├── LICENSE                 # AGPL-3.0 许可证全文（未作修改）
+├── NOTICE                  # 版权与署名声明
 ├── THIRD-PARTY-NOTICES     # 第三方组件许可清单
 ├── App.xaml(.cs)            # 入口、DI 容器、全局异常处理、Serilog 初始化
 ├── MainWindow.xaml(.cs)     # 主窗口（布局、命令分发）

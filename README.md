@@ -98,7 +98,8 @@ You can also open `MSpirit.SafetySys.slnx` in Visual Studio and press F5.
 
 ```
 MS_SafetyManagementSystem/
-├── LICENSE                 # AGPL-3.0 license text
+├── LICENSE                 # AGPL-3.0 license text (unmodified)
+├── NOTICE                  # Copyright & attribution notice
 ├── THIRD-PARTY-NOTICES     # Third-party component licenses
 ├── App.xaml(.cs)            # Entry point, DI container, global exception handling, Serilog setup
 ├── MainWindow.xaml(.cs)     # Main window (layout, command dispatch)
