@@ -10,7 +10,7 @@
 
 - **Bug 报告**请包含：软件版本、Windows 版本、复现步骤、预期结果与实际结果；如涉及崩溃或异常，请附上程序目录下 `logs\debug*.log` 中当天日志的相关片段。
 - **功能建议**请说明使用场景与期望行为，越具体越好。
-- 反馈渠道：项目开源后在仓库 Issue 区提交；尚未开源期间可直接联系作者（AXin / 斜月Spirit）。
+- 反馈渠道：请在仓库 [Issue 区](https://github.com/MoonSpiritX/MSpirit.SafetySys/issues) 提交（Bug 报告与功能建议请按模板填写）；其他联系方式见文末「联系作者」。
 
 ## 开发环境
 

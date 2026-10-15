@@ -41,6 +41,15 @@ A local desktop safety management system for safety management in physical-indus
   <img src="docs/screenshots/10-annotate.png" width="420" alt="Annotate and crop tools" />
 </p>
 
+## Maintenance status
+
+This project is developed and maintained by **a single author** (AXin / 斜月Spirit) in spare time, so updates come at **irregular intervals**.
+
+- Bug reports, feature suggestions and usage questions are welcome — please open an [Issue](https://github.com/MoonSpiritX/MSpirit.SafetySys/issues) using the provided templates.
+- **No additional maintainers are being added, and external pull requests are not accepted at this stage.** If you have a concrete idea for a code change, open an issue first; the author will decide whether and how to implement it.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details and other ways to reach the author.
+
 ## Tech Stack
 
 - **Framework**: .NET 10 (`net10.0-windows10.0.17763.0`) + WPF
@@ -115,7 +124,7 @@ MS_SafetyManagementSystem/
 
 ## Open Source License & Commercial Licensing
 
-> **Current status**: the source code is hosted in the author's **private repository** (not yet publicly released); plans for a public open-source release are pending. The license statements below take effect upon public release.
+> **Status**: the source code is **publicly available** in this repository, released under `AGPL-3.0-or-later`. The license statements below are in effect.
 
 This project is released under the **GNU Affero General Public License v3.0 (`AGPL-3.0-or-later`)**, copyright AXin (斜月Spirit). The full license text is in the root [`LICENSE`](../LICENSE).
 

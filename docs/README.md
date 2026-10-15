@@ -41,6 +41,15 @@
   <img src="screenshots/10-annotate.png" width="420" alt="标注与剪裁" />
 </p>
 
+## 维护状态
+
+本项目由作者 **一人独立开发与维护**（AXin / 斜月Spirit），利用业余时间推进，因此更新**不定期**。
+
+- 欢迎提交 Bug 报告、功能建议与使用问题——请使用 [Issues](https://github.com/MoonSpiritX/MSpirit.SafetySys/issues) 并按模板填写。
+- **现阶段不吸纳其他开发者，也暂不接受外部提交的 Pull Request。** 如有具体的代码改进想法，请先开 Issue 说明方案，由作者决定是否采纳及实现方式。
+
+详见 [`CONTRIBUTING.md`](../CONTRIBUTING.md)（含其他联系方式）。
+
 ## 技术栈
 
 - **框架**：.NET 10（`net10.0-windows10.0.17763.0`）+ WPF
@@ -115,7 +124,7 @@ MS_SafetyManagementSystem/
 
 ## 开源许可与商业授权
 
-> 当前状态：源代码已托管至作者的**私有仓库**（尚未公开发布），对外开源计划待定；以下许可声明自公开发布时生效。
+> 当前状态：本仓库已**公开发布**，以 `AGPL-3.0-or-later` 许可开放源代码；以下许可声明即时生效。
 
 本项目以 **GNU Affero General Public License v3.0（`AGPL-3.0-or-later`）** 开源发布，版权归 AXin（斜月Spirit）所有，许可证全文见根目录 [`LICENSE`](../LICENSE)。
 
