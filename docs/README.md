@@ -119,7 +119,7 @@ MS_SafetyManagementSystem/
 ## 已知事项
 
 - 半成品代码（`Controls/FluentPopup.cs`、`Controls/WindowMaterial.cs`、备份版 MainWindow）已删除（2026-08-14 清理，csproj 排除项同步移除）。
-- 个别文件较大（如 `ImageViewerWindow.xaml.cs` 约 1500 行、`MainWindow.xaml.cs` 约 1495 行），维护时需注意。
+- 个别文件仍然较大（如 `ImageViewerWindow.xaml.cs` 约 1400 行、`GroupTreeViewModel.cs` 约 1400 行，现行清单见 `docs/ISSUES.md`）；`MainWindow.xaml.cs` 已于 2026-08-13 拆分为 10 个 partial（单文件最大约 400 行）。
 - 已有单元测试项目（`MSpirit.SafetySys.Tests`，xUnit，703 个用例覆盖数据层核心逻辑、导入导出链路（Excel/Word）、数据根定位、项目/存档/备份服务、统计/分析视图模型与图片剪裁/标注工具）；历史数据可能存在少量附件文件缺失（详见 `docs/ISSUES.md`）。
 
 ## 开源许可与商业授权

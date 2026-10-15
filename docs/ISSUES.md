@@ -15,15 +15,19 @@
 
 ### 1. 巨型文件（可维护性差）
 - **等级**：中高
-- **现状**：多个文件超过千行，已到难以维护的规模（行数为 2026-08-11 实测）：
-  - `MainWindow.xaml.cs`：1495 行
-  - `ImageViewer\ImageViewerWindow.xaml.cs`：1411 行
-  - `ViewModels\GroupTreeViewModel.cs`：1390 行
+- **现状**：多个文件超过千行，已到难以维护的规模（行数为 **2026-10-15 实测**）：
+  - `ImageViewer\ImageViewerWindow.xaml.cs`：1415 行
+  - `ViewModels\GroupTreeViewModel.cs`：1402 行
   - `Hazard\RecordCardView.Photos.cs`：1116 行
+  - `Services\ProjectDbContext.cs`：1105 行
   - `Analysis\AnalysisViewModel.cs`：1104 行
-  - `Services\ProjectDbContext.cs`：1086 行
   - `Peoplemanagement\PersonnelRecordCardView.Photos.cs`：1057 行
-- **建议**：按职责拆分（如 partial 类已用于 ImageViewer，可继续推广）；`MainWindow` 中的命令与事件处理迁移到 ViewModel/独立服务。
+  - `Export\PersonnelExportViewModel.cs`：941 行
+  - `Hazard\RecordCardView.Interactions.cs`：848 行
+  - `Helpers\OcrService.cs`：820 行
+  - `Tools\ImageProcessCropViewModel.cs`：818 行
+- **已改善**：`MainWindow.xaml.cs` 原 1495 行已于 2026-08-13 拆分为 10 个 partial（核心 398 + Drag/MenuActions/Navigation/OverlayActions/Panels/Popups/Tray/TreeView/ViewModel），单文件最大 398 行，已移出本清单。
+- **建议**：按职责拆分（如 partial 类已用于 ImageViewer 与 MainWindow，可继续推广）；`MainWindow` 中的命令与事件处理迁移到 ViewModel/独立服务。
 
 ### 2. 人员导入暂不支持照片列
 - **等级**：低

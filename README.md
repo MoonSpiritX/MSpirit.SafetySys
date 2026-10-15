@@ -119,7 +119,7 @@ MS_SafetyManagementSystem/
 ## Known Issues
 
 - Half-finished code (`Controls/FluentPopup.cs`, `Controls/WindowMaterial.cs`, and a backup MainWindow) has been removed (cleaned up on 2026-08-14; the csproj exclusions were removed along with the files).
-- A few files are large (e.g., `ImageViewerWindow.xaml.cs` ~1,500 lines, `MainWindow.xaml.cs` ~1,495 lines).
+- A few files are still large (e.g., `ImageViewer/ImageViewerWindow.xaml.cs` ~1,400 lines, `ViewModels/GroupTreeViewModel.cs` ~1,400 lines); see `docs/ISSUES.md` for the current list. `MainWindow.xaml.cs` was split into 10 partial files in Aug 2026 (largest: ~400 lines each).
 - A unit test project now exists (`MSpirit.SafetySys.Tests`, xUnit, 703 tests covering core data-layer logic, the import/export pipeline (Excel & Word), the data-root locator, the project/archive/backup services, the statistics/analysis view models, and the image crop/annotation tooling); historical data may contain a few missing attachment files (see `docs/ISSUES.md`).
 
 ## Open Source License & Commercial Licensing
