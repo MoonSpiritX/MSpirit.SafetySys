@@ -1,5 +1,7 @@
 # 斜月安全管理系统（MS_SafetyManagementSystem）
 
+![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue) ![Platform](https://img.shields.io/badge/platform-Windows%2010%2B-0078D6) ![.NET](https://img.shields.io/badge/.NET-10-512BD4) ![Tests](https://img.shields.io/badge/tests-700%2B%20passing-3FB950)
+
 > **English README**：[`README.md`](../README.md)
 
 单机桌面版安全管理系统，面向**实体行业**（建筑、制造、生产等）企业安全管理：日常安全巡查记录与人员信息管理。当前为个人版 **V1.2**（版本号 1.2.0.0）。
@@ -15,6 +17,29 @@
 | 统计分析（Analysis） | 按月的隐患/人员统计分析图表（LiveChartsCore） |
 | 图片处理（ImageProcess） | 图片方向转换（左转/右转/180°/翻转/EXIF 校正）+ **标注与剪裁**（矩形/圆形/直线/箭头/文字/马赛克六种标注工具，与裁剪一体输出） |
 | 其他 | 系统托盘最小化、单实例保护、四季主题背景 + 节气日历、二维码生成、右键菜单快捷操作 |
+
+## 界面截图
+
+<p>
+  <img src="screenshots/01-main.png" width="420" alt="隐患管理 — 主界面" />
+  <img src="screenshots/02-personnel.png" width="420" alt="人员管理" />
+</p>
+<p>
+  <img src="screenshots/05-import-export.png" width="420" alt="基于 Word/Excel 模板的智能导入导出" />
+  <img src="screenshots/06-statistics.png" width="420" alt="月度统计分析" />
+</p>
+<p>
+  <img src="screenshots/04-lan-entry-desktop.png" width="420" alt="局域网录入 — 电脑端二维码" />
+  <img src="screenshots/07-rotate.png" width="420" alt="图片方向转换" />
+</p>
+<p>
+  <img src="screenshots/03-lan-entry-phone.png" width="180" alt="局域网录入 — 手机端页面" />
+  <img src="screenshots/08-photo-transfer.png" width="420" alt="手机图片传输" />
+</p>
+<p>
+  <img src="screenshots/09-viewer-fullscreen.jpg" width="420" alt="内置图片查看器 — 全屏" />
+  <img src="screenshots/10-annotate.png" width="420" alt="标注与剪裁" />
+</p>
 
 ## 技术栈
 
@@ -102,6 +127,8 @@ MS_SafetyManagementSystem/
 - **纯内部使用**：仅内部使用、不修改、不对外分发或提供服务时，不触发开源义务。
 
 本程序包含的第三方组件及其许可清单见根目录 [`THIRD-PARTY-NOTICES`](../THIRD-PARTY-NOTICES)。
+
+**隐私政策**（商店上架与公开查阅用）：<https://github.com/MoonSpiritX/MSpirit.SafetySys/blob/master/docs/PRIVACY_POLICY.md>
 
 **商业授权**：公司/组织如需闭源集成、商用分发或免除 AGPL 义务，可联系作者（AXin / 斜月Spirit）洽谈商业授权。
 

@@ -8,7 +8,6 @@
 |---|---|
 | MIT | <https://opensource.org/licenses/MIT> |
 | Apache-2.0 | <https://www.apache.org/licenses/LICENSE-2.0> |
-| CPOL 1.02 | <https://www.codeproject.com/info/cpol10.aspx> |
 
 ## 组件清单（以 MS_SafetyManagementSystem.csproj 引用为准）
 
@@ -32,15 +31,16 @@
 | ClosedXML | 0.105.0 | MIT |
 | SkiaSharp.Views.WPF | 3.119.4 | MIT |
 | System.Drawing.Common | 8.0.0 | MIT |
-| Hardcodet.NotifyIcon.Wpf | 1.1.0 | CPOL 1.02 |
+| MetadataExtractor | 2.8.1 | Apache-2.0 |
+| Hardcodet.NotifyIcon.Wpf | 1.1.0 | MIT ¹ |
 | Microsoft.Xaml.Behaviors.Wpf | 1.1.77 | MIT |
 | WPF-UI | 4.3.0 | MIT |
 | Microsoft.Data.Sqlite | 8.0.0 | MIT |
 | Dapper | 2.1.79 | Apache-2.0 |
-| Microsoft.AspNetCore.App（Kestrel 等） | .NET 8 运行时 | MIT |
+| Microsoft.AspNetCore.App（Kestrel 等） | .NET 10 运行时 | MIT |
 
 ## 说明
 
 - 上述组件均允许被 AGPL-3.0 程序链接/使用；MIT 与 Apache-2.0 与 AGPL-3.0 兼容。
-- `Hardcodet.NotifyIcon.Wpf` 采用 Code Project Open License（CPOL 1.02），属非标准许可；本项目仅作为依赖使用、未修改其源码。
+- ¹ `Hardcodet.NotifyIcon.Wpf`：官方仓库（hardcodet/wpf-notifyicon）已于 2023-08 将许可证修正为 **MIT**；NuGet 包元数据仍遗留标注 CPOL 1.02，以官方仓库 LICENSE 为准。本项目仅作为依赖使用、未修改其源码。
 - 完整许可证文本可从各组件官网或 NuGet 包内获取。

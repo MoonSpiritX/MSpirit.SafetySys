@@ -1,5 +1,7 @@
 # MS_SafetyManagementSystem (斜月安全管理系统)
 
+![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue) ![Platform](https://img.shields.io/badge/platform-Windows%2010%2B-0078D6) ![.NET](https://img.shields.io/badge/.NET-10-512BD4) ![Tests](https://img.shields.io/badge/tests-700%2B%20passing-3FB950)
+
 > **简体中文（Chinese）**：[docs/README.md](docs/README.md)
 
 A local desktop safety management system for safety management in physical-industry enterprises (construction, manufacturing, production, etc.) — daily safety inspection records and personnel management. Currently **Personal Edition V1.2** (version 1.2.0.0).
@@ -15,6 +17,29 @@ A local desktop safety management system for safety management in physical-indus
 | Statistics & Analysis (Analysis) | Monthly hazard/personnel statistics charts (LiveChartsCore) |
 | Image Processing (ImageProcess) | Image orientation conversion (rotate left/right/180°, flip, EXIF auto-correct) + **Annotate & Crop** (six annotation tools: rectangle/oval/line/arrow/text/mosaic, output together with cropping) |
 | Others | System tray minimize, single-instance protection, seasonal theme backgrounds + solar-term calendar, QR code generation, context-menu shortcuts |
+
+## Screenshots
+
+<p>
+  <img src="docs/screenshots/01-main.png" width="420" alt="Hazard management — main window" />
+  <img src="docs/screenshots/02-personnel.png" width="420" alt="Personnel management" />
+</p>
+<p>
+  <img src="docs/screenshots/05-import-export.png" width="420" alt="Smart import/export based on Word/Excel templates" />
+  <img src="docs/screenshots/06-statistics.png" width="420" alt="Monthly statistics and analysis" />
+</p>
+<p>
+  <img src="docs/screenshots/04-lan-entry-desktop.png" width="420" alt="LAN entry — QR code on desktop" />
+  <img src="docs/screenshots/07-rotate.png" width="420" alt="Image orientation conversion" />
+</p>
+<p>
+  <img src="docs/screenshots/03-lan-entry-phone.png" width="180" alt="LAN entry — phone page" />
+  <img src="docs/screenshots/08-photo-transfer.png" width="420" alt="Phone photo transfer" />
+</p>
+<p>
+  <img src="docs/screenshots/09-viewer-fullscreen.jpg" width="420" alt="Built-in image viewer — fullscreen" />
+  <img src="docs/screenshots/10-annotate.png" width="420" alt="Annotate and crop tools" />
+</p>
 
 ## Tech Stack
 
@@ -102,6 +127,8 @@ Quick summary for non-developers:
 - **Internal use only**: purely internal use without modification, distribution, or network service does not trigger the open-source obligations.
 
 Third-party component licenses are listed in the root [`THIRD-PARTY-NOTICES`](../THIRD-PARTY-NOTICES).
+
+**Privacy policy** (for store submission and general reference): <https://github.com/MoonSpiritX/MSpirit.SafetySys/blob/master/docs/PRIVACY_POLICY.md>
 
 **Commercial licensing**: companies/organizations that need closed-source integration, commercial distribution, or an exemption from AGPL obligations may contact the author (AXin / 斜月Spirit).
 
