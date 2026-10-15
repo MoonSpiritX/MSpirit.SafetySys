@@ -18,7 +18,7 @@
 | 手机图片传输 | `Tools/PhotoTransferService.cs` | 手机原图传到电脑选定文件夹，按拍摄日期归档 | 拍照/相册多选、逐张直传、完成提示 | 上传 → 读 EXIF → 按日期落盘 |
 | 更新 IPC | `Services/UpdateIpcService.cs` | 供 `Updater.exe` 请求主程序"保存数据并退出"（绿色版更新时文件被占用） | —（命名管道，非 HTTP） | 管道命令 → UI 线程保存退出 |
 
-三者共用同一套骨架：**Kestrel 托管 + token 鉴权 + 20MB 上传上限 + 端口 `LanPorts.Start`..`LanPorts.ProbeEnd` 自动探测 + 局域网 IP 获取 + 嵌入式 HTML 页面**。服务之间不互斥，可多窗口同时运行（端口自动递增，如 Start/Start+1/Start+2）。
+三者共用同一套骨架：**Kestrel 托管 + token 鉴权 + 20MB 上传上限 + 端口 `LanPorts.Start`..`LanPorts.ProbeEnd` 自动探测 + 局域网 IP 获取 + 外置 HTML 页面（随发布拷贝到 `Resources\`，从输出目录磁盘加载，见 2.8）**。服务之间不互斥，可多窗口同时运行（端口自动递增，如 Start/Start+1/Start+2）。
 
 > 差异速记：人员录入**建记录 + OCR**；隐患录入**建记录、不 OCR**；图片传输**两者都不做，纯图片落盘**。
 
@@ -91,7 +91,9 @@ Stop()
 - 图片上传上限 **20MB**（`MaxUploadBytes`），JSON 请求体上限 **1MB**（`MaxJsonBodyBytes`）。
 - 超限返回 `413 Payload Too Large`。
 
-### 2.8 嵌入式 HTML 页面
+### 2.8 外置 HTML 页面（磁盘加载）
+
+> 命名说明：服务启动时的页面加载方法名为 `LoadEmbeddedHtml`（以代码为准；名称中的 "Embedded" 为历史遗留叫法，实现是磁盘文件加载，非程序集嵌入资源），见下。
 
 - 页面文件：`Resources/lan_page.html`（人员）、`Resources/hazard_lan_page.html`（隐患）、`Resources/photo_transfer_page.html`（图片传输），csproj 中 `CopyToOutputDirectory="PreserveNewest"` 随发布物拷贝。
 - 服务启动时 `LoadEmbeddedHtml()` 从**输出目录**读取（调试时回退到源码目录相对路径；都找不到则返回"页面加载失败"最小页并记日志）。
@@ -415,7 +417,7 @@ new PaddleOcrService() → EnsureInitializedAsync（懒加载本地 V5 中文模
 3. **有"拒绝未授权请求"** → token 问题（二维码过期/服务重启后旧页面）。
 4. **有"请求完成"但无业务日志/业务失败** → 应用层处理问题（按各路由日志继续定位）。
 
-> 说明：`token` 值仅在启动快照与二维码 URL 日志中记录（本地诊断用）；请求入口日志中 token 打码为 `***`。网络类别经系统 COM `NetworkListManager` 读取（尽力而为，读取失败不影响服务）。
+> 说明：`token` 完整值仅在**启动快照日志**（三服务一致）与**人员录入窗口的二维码 URL 日志**（`LanPersonnelEntryWindow`，隐患/图片传输窗口不记 URL）中记录（本地诊断用）；请求入口日志中 token 打码为 `***`。网络类别经 `netsh advfirewall monitor show currentprofile` 读取当前活动配置文件（`LanFirewallService.GetCurrentFirewallProfile()`，5 秒 TTL 缓存；2026-08-16 起为唯一方案，原注册表/COM `NetworkListManager` 方案已删除，见第 10 节），读取失败不影响服务。
 
 ---
 

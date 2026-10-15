@@ -2,7 +2,7 @@
 
 **斜月安全管理系统（MS_SafetyManagementSystem）**
 
-*Effective Date: 2026-08-04 | Version 1.0*
+*Effective Date: 2026-08-04 | Last Updated: 2026-09-09 | Version 1.1*
 
 ## 1. Overview
 
@@ -91,7 +91,7 @@ All information is used solely for the local features of the software: personnel
 ## 5. 信息的传输（局域网录入）
 
 - 开启局域网录入时，软件会在您选择的端口上启动绑定 `0.0.0.0` 的本地 HTTP 服务。
-- 数据通过局域网在手机与电脑之间以**明文 HTTP、无鉴权**方式传输。
+- 数据通过局域网在手机与电脑之间以**明文 HTTP**（无 TLS 加密）方式传输；服务通过二维码内嵌的**一次性访问令牌（token）**进行访问控制，未携带有效令牌的请求一律被拒绝（2026-09-09 修订：原描述"无鉴权"与实际实现不符，代码自 LAN 服务重构起即全程 token 校验）。
 - 数据不会传输到互联网。
 - 建议：仅在可信局域网内开启此功能；使用完毕后立即关闭；避免在公共或不可信网络中使用。
 
