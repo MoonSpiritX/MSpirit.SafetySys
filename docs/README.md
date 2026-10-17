@@ -4,7 +4,7 @@
 
 > **English README**：[`README.md`](../README.md)
 
-单机桌面版安全管理系统，面向**实体行业**（建筑、制造、生产等）企业安全管理：日常安全巡查记录与人员信息管理。当前为个人版 **V1.2**（版本号 1.2.0.0）。
+单机桌面版安全管理系统，面向**实体行业**（建筑、制造、生产等）企业安全管理：日常安全巡查记录与人员信息管理。当前为个人版 **V1.2**（版本号 1.2.2.0）。
 
 ## 功能特性
 
@@ -43,7 +43,7 @@
 
 ## 维护状态
 
-本项目由作者 **一人独立开发与维护**（AXin / 斜月Spirit），利用业余时间推进，因此更新**不定期**。
+本项目由作者 **一人独立开发与维护**（斜月Spirit），利用业余时间推进，因此更新**不定期**。
 
 - 欢迎提交 Bug 报告、功能建议与使用问题——请使用 [Issues](https://github.com/MoonSpiritX/MSpirit.SafetySys/issues) 并按模板填写。
 - **现阶段不吸纳其他开发者，也暂不接受外部提交的 Pull Request。** 如有具体的代码改进想法，请先开 Issue 说明方案，由作者决定是否采纳及实现方式。
@@ -88,10 +88,10 @@ dotnet publish MS_SafetyManagementSystem.csproj -c Release -r win-x64 --self-con
 
 ## 数据存储与备份（重要）
 
-- **数据根目录**：默认取第一个可用的非系统固定盘（D→E→F…字母序，数据根为 `{盘根}\MSpirit.SafetySys.Date`）；无可用非系统固定盘时回退 `%LOCALAPPDATA%\MSpirit.SafetySys.Date`。启动时程序会记住上次使用的数据根，若发现数据目录丢失（如磁盘未连接、盘符变化）会引导找回（手动选择 / 全盘搜索），详见 `Services/DataRootLocator.cs`。
+- **数据根目录**：默认取第一个可用的非系统固定盘（D→E→F…字母序，数据根为 `{盘根}\MSpirit.SafetySys.Date`）；无可用非系统固定盘时回退 `%USERPROFILE%\MSpirit.SafetySys.Date`。启动时程序会记住上次使用的数据根，若发现数据目录丢失（如磁盘未连接、盘符变化）会引导找回（手动选择 / 全盘搜索），详见 `Services/DataRootLocator.cs`。
 - **数据库**：根目录下 `master.db`（项目列表）；各项目数据在 `ProjectsDate\Project_{id}\data.db`。
 - **附件文件**：`ProjectsDate\Project_{id}\{模块}_{yyyy-MM}\Card_{记录ID}\`，缩略图在 `thumb\` 子目录。
-- **运行日志**：程序目录下 `logs\debug*.log`（按天滚动，保留 7 天）。
+- **运行日志**：用户目录下 `%USERPROFILE%\MSpirit.SafetySys\logs\debug*.log`（按天滚动，保留 7 天）。
 - **自动备份**：程序在启动和退出时自动备份到 `ProjectsDate.Backup` 文件夹（保留最近 30 天、最多 100 份）；如需长期备份，可在退出程序后整体复制数据根目录（含 `master.db` 与 `ProjectsDate`），或导出 `.msarch` 存档包。
 
 ## 项目结构
@@ -127,7 +127,7 @@ MS_SafetyManagementSystem/
 
 > 当前状态：本仓库已**公开发布**，以 `AGPL-3.0-or-later` 许可开放源代码；以下许可声明即时生效。
 
-本项目以 **GNU Affero General Public License v3.0（`AGPL-3.0-or-later`）** 开源发布，版权归 AXin（斜月Spirit）所有，许可证全文见根目录 [`LICENSE`](../LICENSE)。
+本项目以 **GNU Affero General Public License v3.0（`AGPL-3.0-or-later`）** 开源发布，版权归 斜月Spirit 所有，许可证全文见根目录 [`LICENSE`](../LICENSE)。
 
 面向非开发者用户的简要说明：
 
@@ -140,7 +140,7 @@ MS_SafetyManagementSystem/
 
 **隐私政策**（商店上架与公开查阅用）：<https://github.com/MoonSpiritX/MSpirit.SafetySys/blob/master/docs/PRIVACY_POLICY.md>
 
-**商业授权**：公司/组织如需闭源集成、商用分发或免除 AGPL 义务，可联系作者（AXin / 斜月Spirit）洽谈商业授权。
+**商业授权**：公司/组织如需闭源集成、商用分发或免除 AGPL 义务，可联系作者（斜月Spirit）洽谈商业授权。
 
 ## 相关文档
 

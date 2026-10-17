@@ -123,8 +123,11 @@ Stop()
 HTTP 无长连接，设备"在线/离线"靠心跳判定，三窗口共用 `Services/LanDeviceTracker.cs`（纯逻辑、时间可注入、可单测；定时器与界面刷新由窗口负责）：
 
 - **计入**：任何**授权**请求（携带有效 token，经鉴权中间件）到达时触发 `DeviceConnected(来源IP)` → 记录心跳（IP 去重）。服务重启后旧 token 失效，旧页面请求一律 401 不计入。
-- **即时移除**：手机页面 `pagehide` 时 `sendBeacon('/bye?token=...')` 上报 → 服务端触发 `DeviceLeft(来源IP)` → **窗口立即移除该设备**（不再等 20 秒超时）。`/bye` 由基类注册，经鉴权中间件（旧 token 无效）。
-- **兜底移除**：beacon 失败/页面强杀时，窗口定时器每 5 秒 `Sweep()` 一次，超过 **30 秒**无任何请求的设备移除（`LanDeviceTracker.Timeout = 30s`）。
+- **手机端仅在页面可见时上报**（2026-10-15）：`setInterval` 内先判 `document.visibilityState === 'visible'` 才发 `/ping`，另在 `visibilitychange` 变回可见时**立即补发一次**（不必等下一个 3 秒周期）。这一步是必要的——手机切后台/锁屏后，浏览器仍可能以节流方式续跑定时器，原先无条件发送会让设备数**永不归零**（"假在线"）。
+- **即时移除**：手机页面 `pagehide` 时 `sendBeacon('/bye?token=...')` 上报 → 服务端触发 `DeviceLeft(来源IP)` → **窗口立即移除该设备**（无需等心跳超时）。`/bye` 由基类注册，经鉴权中间件（旧 token 无效）。覆盖"页面真正卸载"（关标签页、导航离开）。
+- **兜底移除**：页面未卸载但心跳已停（切后台、锁屏、断网、浏览器被强杀）时，窗口 `DispatcherTimer` 每 **2 秒** `Sweep()` 一次，超过 **10 秒**无任何请求的设备移除（`LanDeviceTracker.DefaultTimeout`，三窗口统一用无参构造，超时值单点定义）。
+  - 取值依据：手机端 3 秒一次心跳 → 10 秒 = 容忍 **3 次连续丢失**，足够抗 Wi-Fi 抖动；原 30 秒 + 5 秒巡检让"切后台"要等约 35 秒才归零，过慢。
+  - 最坏归零耗时 ≈ 10 秒（超时）+ 2 秒（巡检）= **约 12 秒**。
 - **停止服务**：停止心跳扫描、`Reset()` 清空设备集合（设备集合属于本次服务会话）。
 - 窗口显示「已连接设备：x台 │ 已录入：x人/条」两行计数（2026-08-16 由单行「已录入」扩展）。
 
@@ -223,7 +226,7 @@ new PaddleOcrService() → EnsureInitializedAsync（懒加载本地 V5 中文模
 - 拍照区：正面/背面两个拍照框（`capture` 唤起相机）+ "从相册选择（单次最多 2 张）"。
 - 上传：Canvas 压缩（最长边 1200px、JPEG 0.7）后 `POST /upload`，正反面都传完再 `POST /submit`，随后轮询 `/status`。
 - 提交后清空拍照框，可连续录下一人。
-- 在线检测：每 3 秒 `GET /ping` 心跳；页面关闭（`pagehide`）时 `sendBeacon('/bye')` 上报离开（见 2.11）。
+- 在线检测：每 3 秒 `GET /ping` 心跳（**仅页面可见时发送**，并在 `visibilitychange` 回到前台时立即补发）；页面关闭（`pagehide`）时 `sendBeacon('/bye')` 上报离开（见 2.11）。
 
 ---
 
@@ -376,14 +379,29 @@ new PaddleOcrService() → EnsureInitializedAsync（懒加载本地 V5 中文模
 
 > 背景：经实测验证（见 `临时文档/LAN问题根因验证结论-20260815.md`），**LAN 服务可达性由 Windows 防火墙放行规则（Allow/Block）决定**——公用网络默认阻止入站，首次使用 LAN 的用户（无「斜月安全管理系统-LAN」规则）手机必然连不上；而用户群体不具备命令行操作能力，须程序内一键放行。
 
-- **组件**：`Services/LanFirewallService.cs`（检测 + UAC 放行 + 引导流程）、`Views/LanFirewallPromptWindow.xaml(.cs)`（引导窗口）。
+- **组件**：`Services/LanFirewallService.cs`（检测 + UAC 放行 + 引导流程 + 形态分流 `IsRunningPackaged`/`DecideAction` + 路径比对 `ProgramPathEquals`/`TryGetPackageFullName`）、`Views/LanFirewallPromptWindow.xaml(.cs)`（引导窗口，含 `manualOnly` 手动指引形态）。
 - **触发时机**：三个 LAN 窗口（人员/隐患/传图）点「启动服务」时、创建服务前，调用 `LanFirewallService.EnsureFirewallAccess(this)`——**仅在用户主动使用 LAN 时触发**，不用 LAN 的用户零打扰。
 - **流程（2026-08-16 重构为「程序级放行 + 原生弹窗」方案）**：
   0. **程序级阻止规则检测**：`HasProgramBlockRule()` 全量扫描中解析 `Program + Direction=In + Action=Block` 且 Program 路径忽略大小写匹配本程序 exe 的规则。根因：Windows 防火墙弹窗（程序首次监听入站时弹出）点「取消」即生成**程序级 Block 规则，且优先于端口级 Allow 规则**（2026-08-15 实测，本机即遗留两条针对 `mspirit.safetysys.exe` 的 TCP/UDP Block 规则）——存在时即使端口已放行手机也连不上，**且存在匹配规则时 Windows 不再弹「是否允许访问」的原生窗口**。命中则弹窗（`LanFirewallPromptWindow(programBlocked:true)`）→ 确认后 `TryRemoveProgramBlockRules()` UAC 执行 `netsh advfirewall firewall delete rule name=all dir=in program="<规则原文路径>"`（逐条删除规则里记录的原始路径，保证精确命中；端口级规则无 Program 字段不受影响）；
   1. **已有放行判定**：`HasAllowRule()`（TCP+Allow+LocalPort 覆盖 `LanPorts.Start` 的端口规则，不限定规则名，按当前 Start 校验——改端口后旧端口规则不误判）**或** `HasProgramAllowRule()`（程序级 Allow 规则，覆盖所有端口、与端口值无关，即原生弹窗点【允许访问】的落盘形态）→ 直接可用；
   2. **无任何放行规则 → 原生弹窗引导**：不预写端口规则（一旦写入规则，Windows 原生弹窗就不会出现）。默认路径：服务启动后**手机首次连接时 Windows 自动弹出『是否允许此应用访问网络？』**，用户勾选网络类型点【允许访问】即生成程序级 Allow 规则（一劳永逸，改 `LanPorts.Start` 也无需重设）；引导窗口同时提供「立即放行」按钮，一键 UAC 写入程序级 Allow 规则（`TryAddProgramAllowRule()`，原生弹窗的确定性等价物，`netsh advfirewall firewall add rule name="斜月安全管理系统-LAN" dir=in action=allow program="<exe>"`）。
   3. 用户选「暂不」/ UAC 取消 → 返回 false，**服务照常启动**，仅 Toast 提示"首次手机连接时在 Windows 弹出的询问窗口点【允许访问】"（不阻断用户）。
-- **设计要点**：
+- **形态分流（2026-10-15 新增，MSIX 商店版适配）**：`EnsureFirewallAccess` 现按纯函数 `DecideAction(是否包内, 是否程序级阻止, 是否已放行)` 分派三态——
+  - `Proceed`（已有放行且无程序级阻止）→ 直接放行，零交互（各形态一致）；
+  - `PromptAndElevate`（**非打包形态**：开发调试，以及未来商店外的 EXE/MSI 分发）→ 上面第 0~3 步的 UAC 路径，**行为完全不变**（抽为 `EnsureFirewallAccessByElevation`）；
+  - `PromptManualOnly`（**MSIX 包内** = 商店版）→ 只弹手动指引窗，**绝不提权**。原因：包内 `Process.Start(Verb="runas")` 不可用——商店不批 `allowElevation`，且该能力语义是"允许应用**在启动时**提权"（需配合 exe manifest 的 `requireAdministrator`），与本服务需要的"**运行中按需提权**"不是一回事；不改则表现为"弹窗 → 点按钮 → 毫无反应"，比直接说不支持更误导。
+  - 手动指引窗（`manualOnly: true`）：隐藏「立即放行 / 立即解除阻止」，改为「打开防火墙设置」（`control.exe firewall.cpl`，不经提权）、「重新检测」（后台线程跑一次规则扫描，命中即关窗返回 true，调用方随之继续启动服务）、「复制命令」（复制等效 netsh 命令行，供管理员命令提示符粘贴——服务电话指导 / 远程协助）。文案**先让用户用手机试连**：清单规则可能已生效、只是检测未命中（`Program` 字段逐字符比对的假阴性），直接引导用户改防火墙可能纯属多余。端口区间文案引用 `LanPorts.Start`/`FirewallEnd`，不写死数字。
+  - 包内未确认放行时**不再叠加"等 Windows 原生弹窗"的 Toast**（三个录入窗口均加 `&& !IsRunningPackaged()` 判定）——包内不走原生弹窗这条路径，叠加提示会与手动指引窗自相矛盾。
+  - **调试开关（均仅开发用，正式逻辑不依赖）**：
+    - `MS_SPIRIT_FORCE_PACKAGED=1` → 强制 `IsRunningPackaged()` 返回 true（模拟包内形态）；
+    - `MS_SPIRIT_FORCE_MANUAL_PROMPT`（**非空即生效**，值为 `block` 时按"存在程序级阻止"渲染文案）→ **跳过全部检测**、直接弹手动指引窗，供**未打包时**目视验证该窗口。**为什么需要第二个开关**：本机若已存在放行规则，`DecideAction` 会走 `Proceed`、窗口**根本不弹**；而"禁用规则"同样无效——检测逻辑（`TryGetProgramRulePath`/`RuleTextCoversStartPort`）**不解析 `Enabled` 字段**，`netsh … show rule … verbose` 会把已禁用规则照常列出，仍判为"已放行"。故只能绕过检测，不能靠改系统状态。
+  - 判定矩阵已配单元测试（`DecideAction_*`，含"有程序级阻止时即使有放行也不得直接放行"）；调试开关配 `TryForceManualPrompt_*`（4 例，环境变量读写在用例内**显式设置并还原**，不依赖外部环境）；`IsRunningPackaged()` 依赖真实运行环境，不做值断言（只做"不抛异常"保护）。
+  - **路径比对：`ProgramPathEquals` 三级判定（2026-10-15 新增，修盘符联接假阴性）**：判"规则里的 `Program` 是否指向本程序 exe"不再用单次字符串相等，而是 ① 原样忽略大小写 → ② **路径规范化**后比对（统一 `\` 分隔符、折叠重复分隔符、去尾随分隔符）→ ③ **仅在包内运行时**（`TryGetPackageFullName` 拿到的包全名非空）：规则路径的**父目录名等于当前包全名**且**文件名相同**。
+    - 第 ③ 级专治**盘符联接**：系统盘不是唯一安装位置时（Windows「新应用安装位置」设到别的盘），包实体放在 `D:\WindowsApps\<包全名>\`，`C:\Program Files\WindowsApps\<包全名>` 只是一个**目录联接**。于是系统按清单 `windows.firewallRules` 自建的规则里记的是 **`D:`** 路径，而进程自报的 `Environment.ProcessPath` 是 **`C:`** 路径 → 原样比对必然不等 → 包内**每次**点「启动服务」都弹手动指引窗（防火墙其实早已放行、手机能连上，只是程序判断不出来；2026-10-15 实测确认，见 `临时文档/R3-LAN防火墙MSIX适配方案.md` §11.9）。
+    - 第 ③ 级**刻意门控在包内**：非打包形态（绿色版 / 开发实例）行为完全不变，同时避免把绿色版的遗留放行规则（父目录名形如 `Debug.SafetySys`）误判成"包内已放行"——漏判只是多弹一次窗，误判会让手机连不上却无引导。
+    - 该函数**不访问文件系统**（不做重解析点解析）：`C:\Program Files\WindowsApps` 的 ACL 对非提权进程不友好，而包全名含发布者哈希、全局唯一，"父目录名 + 文件名"已足够特异且更稳。
+    - 两个命中路径都走它：`TryGetProgramRulePath`（程序级 Allow/Block 规则）与 `RuleTextCoversStartPort`（带 `Program` 行的端口级规则）；`TryRemoveProgramBlockRules` 用的是**规则自带路径**去删，不受影响。配 15 例单测（含"盘符联接包内命中"与三个守护用例）。
+  - **设计要点**：
   - 规则解析逻辑（`PortListCovers`/`RuleTextCoversStartPort`/`TryGetProgramRulePath`）为纯函数，已配单元测试 `LanFirewallServiceTests`；
   - 程序级规则（Allow 与 Block 均按 Program 路径解析）与端口值解耦：**改 LanPorts.Start 不再需要动防火墙规则**（历史端口规则 5000-5100/6000-6100/9100-9200 等为旧方案残留，无害，程序不主动清理）；
   - **规则名无关（2026-08-16 实测补充）**：检测/删除**均不依赖规则名**，一律按「Program 路径 + Direction + Action / LocalPort 覆盖」判定。原因：Windows 原生弹窗点【允许访问】生成的程序级规则名是**程序描述名「斜月安全管理系统」**（不带 `-LAN` 后缀），而「立即放行」按钮写的是「斜月安全管理系统-LAN」——两种来源都必须识别；同理，清理规则时按 DisplayName 会漏掉原生弹窗那批，须按 Program 路径删（`TryRemoveProgramBlockRules` 已如此）。
@@ -394,7 +412,7 @@ new PaddleOcrService() → EnsureInitializedAsync（懒加载本地 V5 中文模
 
 ## 9. 诊断日志（2026-08-15 添加）
 
-> 背景：LAN 功能在作者本机正常、发给他人后不可用，为定位"网络层 vs 应用层"问题添加详细执行日志。日志写入程序目录 `logs\debug*.log`（Serilog，Debug 级全量）。
+> 背景：LAN 功能在作者本机正常、发给他人后不可用，为定位"网络层 vs 应用层"问题添加详细执行日志。日志写入用户目录 `%USERPROFILE%\MSpirit.SafetySys\logs\debug*.log`（Serilog，Debug 级全量）。
 
 ### 9.1 日志分层与定位方法
 
@@ -448,7 +466,7 @@ new PaddleOcrService() → EnsureInitializedAsync（懒加载本地 V5 中文模
 | LAN 服务公共基类 | `Services/LanServiceBase.cs`（Kestrel 托管/鉴权/设备事件/共享工具，三服务共用，2026-08-16 抽取） |
 | 设备在线跟踪 | `Services/LanDeviceTracker.cs`（`OnConnected`/`OnLeft`/`Sweep`/`Reset`，三窗口计数共用） |
 | 更新 IPC | `Services/UpdateIpcService.cs`（`Start`/`ListenLoop`/`RequestSaveAndExit`） |
-| 防火墙放行引导 | `Services/LanFirewallService.cs`（`EnsureFirewallAccess`/`HasAllowRule`/`HasProgramAllowRule`/`HasProgramBlockRule`/`TryAddProgramAllowRule`/`TryRemoveProgramBlockRules`/`FindProgramRulePaths`/`PortListCovers`/`DecodeNetshText`）、`Views/LanFirewallPromptWindow.xaml(.cs)` |
+| 防火墙放行引导 | `Services/LanFirewallService.cs`（`EnsureFirewallAccess`/`EnsureFirewallAccessByElevation`/`DecideAction`/`IsRunningPackaged`/`TryForceManualPrompt`/`HasAllowRule`/`HasProgramAllowRule`/`HasProgramBlockRule`/`TryAddProgramAllowRule`/`TryRemoveProgramBlockRules`/`FindProgramRulePaths`/`PortListCovers`/`DecodeNetshText`）、`Views/LanFirewallPromptWindow.xaml(.cs)` |
 | 端口探测 | `Services/LanPortProbe.cs`（`FindAvailable`/`IsBindFailure`/`IsBrowserRestrictedPort`） |
 | 录入窗口 | `Controls/LanPersonnelEntryWindow.xaml(.cs)`（原 LanEntryWindow，2026-08-16 改名）、`Controls/LanHazardEntryWindow.xaml(.cs)`（原 HazardLanEntryWindow）、`Tools/PhotoTransferWindow.xaml(.cs)` |
 | OCR 接口与实现 | `Helpers/IOcrService.cs`、`Helpers/PaddleOcrService.cs`、`Helpers/WindowsOcrService.cs` |

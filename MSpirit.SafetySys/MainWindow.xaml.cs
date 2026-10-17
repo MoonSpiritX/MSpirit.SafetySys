@@ -1,4 +1,4 @@
-// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 斜月Spirit
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using Hardcodet.Wpf.TaskbarNotification;
@@ -171,11 +171,7 @@ namespace MS_SafetyManagementSystem
             }
 
             _notifyIcon = new NotifyIcon();
-            var iconPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "斜月安全管理系统.ico");
-            if (System.IO.File.Exists(iconPath))
-                _notifyIcon.Icon = new System.Drawing.Icon(iconPath);
-            else
-                _notifyIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            _notifyIcon.Icon = LoadTrayIcon();
             _notifyIcon.Text = "斜月安全管理系统";
             _notifyIcon.Visible = true;
 
@@ -393,6 +389,58 @@ namespace MS_SafetyManagementSystem
             {
                 Log.Warning(ex, "恢复窗口规格失败");
             }
+        }
+
+        /// <summary>
+        /// 加载托盘图标（2026-10-17 统一图标后调整）。
+        /// 直接取 exe 内嵌的图标组 —— 与 csproj 的 ApplicationIcon 同一个 ico（含 16~256 六档），
+        /// 不依赖输出目录里的物理文件，绿色版与 MSIX 版行为一致，也不会出现"文件丢了图标就变默认"。
+        /// </summary>
+        /// <summary>
+        /// 加载托盘图标（2026-10-17 统一图标后新增）。
+        /// <para>
+        /// 托盘图标按系统 DPI 取不同尺寸：100% 用 16×16、150% 用 24×24。
+        /// <c>Icon.ExtractAssociatedIcon</c> 只能给出 32×32，直接交给系统缩放会发虚，
+        /// 所以这里按 <c>SystemInformation.SmallIconSize</c> 重建目标尺寸的 HICON。
+        /// </para>
+        /// <para>
+        /// 2026-10-17 说明：图标本身已确认能正常注册到通知区域（实测系统托盘里存在该项），
+        /// 若肉眼找不到，是 24px 下深色底 + 暗色符号对比过低，属于图标设计问题，不是加载失败。
+        /// </para>
+        /// </summary>
+        private static System.Drawing.Icon LoadTrayIcon()
+        {
+            try
+            {
+                var exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                var raw = System.Drawing.Icon.ExtractAssociatedIcon(exePath);
+
+                if (raw != null)
+                {
+                    try
+                    {
+                        var target = System.Windows.Forms.SystemInformation.SmallIconSize;
+                        var sized = new System.Drawing.Icon(raw, target);
+                        Log.Information($"托盘图标已加载：{sized.Width}×{sized.Height}（托盘请求 {target.Width}×{target.Height}）");
+                        raw.Dispose();
+                        return sized;
+                    }
+                    catch (Exception ex)
+                    {
+                        // 尺寸重建失败不致命，直接用原始 32×32
+                        Log.Warning(ex, "托盘图标按目标尺寸重建失败，改用 exe 原始尺寸");
+                        return raw;
+                    }
+                }
+
+                Log.Warning("exe 未提取到关联图标，暂用系统默认应用图标");
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "托盘图标从 exe 提取失败，暂用系统默认应用图标");
+            }
+
+            return System.Drawing.SystemIcons.Application;
         }
     }
 }

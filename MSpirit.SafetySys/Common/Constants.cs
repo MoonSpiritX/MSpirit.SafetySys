@@ -1,4 +1,4 @@
-// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 斜月Spirit
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 namespace MS_SafetyManagementSystem.Common
@@ -26,7 +26,7 @@ namespace MS_SafetyManagementSystem.Common
     /// 探测上限与防火墙放行终点自动跟随。引用方：
     ///  - 三个录入窗口 LanPortProbe.FindAvailable 起点与"端口占用"提示文案（LanPersonnelEntryWindow /
     ///    LanHazardEntryWindow / PhotoTransferWindow）
-    ///  - LanFirewallService 放行规则端口范围
+    ///  - 防火墙引导窗手动步骤的放行端口区间（LanFirewallPromptWindow）
     /// </summary>
     public static class LanPorts
     {

@@ -21,7 +21,7 @@ All information is used solely for the local features of the software: personnel
 
 ## 4. Where Information Is Stored
 
-- All data is stored locally on your computer under `{drive}\MSpirit.SafetySys.Date` (on the first available non-system fixed drive, e.g. D:\, E:\...) or `%LOCALAPPDATA%\MSpirit.SafetySys.Date` (fallback when no such drive exists).
+- All data is stored locally on your computer under `{drive}\MSpirit.SafetySys.Date` (on the first available non-system fixed drive, e.g. D:\, E:\...) or `%USERPROFILE%\MSpirit.SafetySys.Date` (fallback when no such drive exists, i.e. a single-drive machine).
 - Data is stored in local SQLite databases and attachment files (photos, documents).
 - **No built-in encryption**: data is stored in plaintext. If your data is highly sensitive, we recommend enabling OS-level disk encryption (e.g., BitLocker) on your computer.
 
@@ -57,7 +57,7 @@ All information is used solely for the local features of the software: personnel
 
 ## 11. Contact
 
-- If you have any questions about this policy, please contact the author: AXin (斜月Spirit), via email (**374532719@qq.com**), GitHub (**https://github.com/MoonSpiritX**), or the official Douyin user group (**群号 659306761979**).
+- If you have any questions about this policy, please contact the author: MSpirit (斜月Spirit), via email (**374532719@qq.com**), GitHub (**https://github.com/MoonSpiritX**), or the official Douyin user group (**群号 659306761979**).
 
 ---
 
@@ -84,7 +84,7 @@ All information is used solely for the local features of the software: personnel
 
 ## 4. 信息的存储
 
-- 所有数据存储在您电脑本地：`{盘根}\MSpirit.SafetySys.Date`（第一个可用的非系统固定盘，如 D:\、E:\）或 `%LOCALAPPDATA%\MSpirit.SafetySys.Date`（无可用非系统固定盘时兜底）。
+- 所有数据存储在您电脑本地：`{盘根}\MSpirit.SafetySys.Date`（第一个可用的非系统固定盘，如 D:\、E:\）或 `%USERPROFILE%\MSpirit.SafetySys.Date`（无可用非系统固定盘时兜底，即只有一块硬盘的机器）。
 - 数据以本地 SQLite 数据库与附件文件（照片、文档）形式存储。
 - **无内置加密**：数据以明文存储。如数据较为敏感，建议在电脑上启用系统级磁盘加密（如 BitLocker）。
 
@@ -120,7 +120,7 @@ All information is used solely for the local features of the software: personnel
 
 ## 11. 联系我们
 
-- 如对本政策有任何疑问，可通过以下方式联系作者：AXin（斜月Spirit）——邮箱（**374532719@qq.com**）、GitHub（**https://github.com/MoonSpiritX**）或抖音交流群（**群号 659306761979**）。
+- 如对本政策有任何疑问，可通过以下方式联系作者：斜月Spirit——邮箱（**374532719@qq.com**）、GitHub（**https://github.com/MoonSpiritX**）或抖音交流群（**群号 659306761979**）。
 
 ---
 

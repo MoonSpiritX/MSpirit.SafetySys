@@ -31,6 +31,9 @@ desktop.ini
 临时文档/
 文案文档/
 
+# ===== 一次性调试备份（故障样本等，不入库） =====
+*.bak-*
+
 # ===== 快捷方式与测试残留 =====
 *.lnk
 
@@ -42,6 +45,12 @@ TestResults/
 *.msix
 *.msixupload
 *.msarch
+
+# ===== 签名私钥与口令（绝不入库；现落在 bin/MSIX.Cert/ 已被上面 bin/ 覆盖，此处为兜底） =====
+*.pfx
+*.pvk
+*.snk
+*.password
 
 # ===== 数据库（防本地误运行产生；正式数据在 D:\MSpirit.SafetySys.Date） =====
 *.db

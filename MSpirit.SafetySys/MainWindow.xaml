@@ -37,7 +37,7 @@
         </Grid.RowDefinitions>
 
         <controls:WindowTitleBar Grid.Row="0"
-                         Icon="pack://application:,,,/Resources/斜月安全管理系统256.png"
+                         Icon="pack://application:,,,/Resources/斜月安全管理系统图标256.png"
                          Title="{Binding WindowTitle}"
                          ShowMinimizeButton="True"
                          ShowMaximizeButton="True"/>

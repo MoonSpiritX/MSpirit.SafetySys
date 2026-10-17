@@ -1,4 +1,4 @@
-// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 斜月Spirit
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using System;
@@ -24,7 +24,8 @@ namespace MS_SafetyManagementSystem.Services
         /// 默认构造：自动选择数据根位置。
         /// 规则（2026-08-15 由"仅认 D 盘"改为通用算法）：
         ///  - 优先：第一个可用的非系统固定盘（按盘符字母序 D→E→F…，排除系统盘与可移动/网络盘）；
-        ///  - 兜底：%LOCALAPPDATA%\MSpirit.SafetySys.Date（系统盘）。
+        ///  - 兜底：%USERPROFILE%\MSpirit.SafetySys.Date（单盘机器；2026-10-15 由 LOCALAPPDATA 改此，
+        ///    规避 MSIX 虚拟化导致"卸载即清空数据"）。
         /// 数据根 = {所选盘根}\MSpirit.SafetySys.Date。
         /// </summary>
         public DataPathService() : this(DefaultRootPath())
@@ -42,15 +43,18 @@ namespace MS_SafetyManagementSystem.Services
             Directory.CreateDirectory(Path.Combine(RootPath, "Temp"));
         }
 
-        /// <summary>计算默认数据根路径：先选非系统固定盘，无可选时兜底 LOCALAPPDATA（DataRootLocator 决策链复用）</summary>
+        /// <summary>
+        /// 计算默认数据根路径：先选非系统固定盘，无可选时兜底到用户目录（DataRootLocator 决策链复用）。
+        /// 兜底位置 2026-10-15 由 %LOCALAPPDATA% 改为 %USERPROFILE%\MSpirit.SafetySys.Date：
+        /// MSIX 会把对 AppData 的新建写入重定向到包私有目录，卸载即清空，单盘机器会因此丢全部数据。
+        /// </summary>
         public static string DefaultRootPath()
         {
             string? driveRoot = PickDataDrive(GetFixedReadyDriveRoots());
             if (!string.IsNullOrEmpty(driveRoot))
                 return Path.Combine(driveRoot, DataRootFolderName);
 
-            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            return Path.Combine(localAppData, DataRootFolderName);
+            return AppPaths.FallbackDataRootPath;
         }
 
         /// <summary>枚举所有就绪的固定盘根路径（如 "C:\"、"D:\"）</summary>

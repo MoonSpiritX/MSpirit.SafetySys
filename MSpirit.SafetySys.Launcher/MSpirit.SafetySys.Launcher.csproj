@@ -15,10 +15,10 @@
     <!-- 用户可见的程序名：发布产物即“斜月安全管理系统.exe”，无需改名 -->
     <AssemblyName>斜月安全管理系统</AssemblyName>
     <RootNamespace>MSpirit.SafetySys.Launcher</RootNamespace>
-    <Product>斜月安全管理系统（个人版）V1.0</Product>
-    <ApplicationIcon>斜月安全管理系统.ico</ApplicationIcon>
-    <Authors>AXin</Authors>
-    <Version>1.0.0.0</Version>
+    <Product>斜月安全管理系统（个人版）</Product>
+    <ApplicationIcon>..\MSpirit.SafetySys\Resources\斜月安全管理系统图标256.ico</ApplicationIcon>
+    <Authors>斜月Spirit</Authors>
+    <!-- 版本号跟随主程序：统一由根 Directory.Build.props 的 SafetySysVersion 注入（2026-10-17） -->
 
     <!-- NativeAOT：编译成本地机器码，单文件、零运行时依赖 -->
     <PublishAot>true</PublishAot>

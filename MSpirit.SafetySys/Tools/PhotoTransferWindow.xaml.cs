@@ -1,4 +1,4 @@
-// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 斜月Spirit
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using System;
@@ -227,7 +227,9 @@ namespace MS_SafetyManagementSystem.Tools
             {
                 // 首次使用引导：检测防火墙放行（程序级阻止规则/放行规则），缺失则弹引导窗口。
                 // 返回 false 不阻断：手机首次连接时 Windows 会弹「是否允许访问网络」窗口，点允许即放行。
-                if (!LanFirewallService.EnsureFirewallAccess(this))
+                // 商店版（MSIX 包内）不走原生弹窗这条路径（规则由清单 windows.firewallRules 预置，
+                // 且包内无法提权）→ 提示已由手动指引窗给出，此处不再叠加"等系统弹窗"的文案（2026-10-15，R3）。
+                if (!LanFirewallService.EnsureFirewallAccess(this) && !LanFirewallService.IsRunningPackaged())
                     ToastService.Show("未自动放行：手机首次连接时，Windows 会弹出\n" +
                         "『是否允许访问网络』窗口，请务必点【允许访问】。\n" +
                         "若点【取消】会生成阻止规则导致无法连接，\n" +
@@ -432,10 +434,11 @@ namespace MS_SafetyManagementSystem.Tools
             }
         }
 
-        /// <summary>已连接设备跟踪（三窗口共用，见 Services/LanDeviceTracker.cs；心跳 30s 兜底，正常关页经 /bye 即时移除）</summary>
-        private readonly LanDeviceTracker _deviceTracker = new(TimeSpan.FromSeconds(30));
+        /// <summary>已连接设备跟踪（三窗口共用，见 Services/LanDeviceTracker.cs；超时值见 LanDeviceTracker.DefaultTimeout，正常关页经 /bye 即时移除）</summary>
+        private readonly LanDeviceTracker _deviceTracker = new();
 
-        private static readonly TimeSpan DeviceSweepInterval = TimeSpan.FromSeconds(5);
+        /// <summary>巡检间隔：配合手机端"仅页面可见时上报"，切后台/断网后最多约 12 秒内归零</summary>
+        private static readonly TimeSpan DeviceSweepInterval = TimeSpan.FromSeconds(2);
         private System.Windows.Threading.DispatcherTimer? _deviceSweepTimer;
 
         /// <summary>任何授权请求到达服务时触发（参数：来源 IP）——记录心跳并统计"已连接设备"</summary>

@@ -185,6 +185,99 @@ public class DataRootLocatorTests : IDisposable
         Assert.Throws<ArgumentException>(() => DataRootLocator.PickBestCandidate(Array.Empty<string>()));
     }
 
+    // ===== 旧记录回落与迁移（2026-10-15 MSIX 适配：记录位置 LOCALAPPDATA → USERPROFILE） =====
+
+    [Fact]
+    public void 记录_新位置无记录_回落旧位置()
+    {
+        string newFile = Path.Combine(_root, "new.txt");
+        string oldFile = Path.Combine(_root, "old.txt");
+        File.WriteAllText(oldFile, @"D:\Old.Date");
+
+        Assert.Equal(@"D:\Old.Date", DataRootLocator.ReadRecordedRoot(newFile, oldFile));
+    }
+
+    [Fact]
+    public void 记录_两处都有记录_新位置优先()
+    {
+        string newFile = Path.Combine(_root, "new.txt");
+        string oldFile = Path.Combine(_root, "old.txt");
+        File.WriteAllText(newFile, @"D:\New.Date");
+        File.WriteAllText(oldFile, @"D:\Old.Date");
+
+        Assert.Equal(@"D:\New.Date", DataRootLocator.ReadRecordedRoot(newFile, oldFile));
+    }
+
+    [Fact]
+    public void 记录_仅注入新位置时_不读旧位置_保持用例隔离()
+    {
+        string newFile = Path.Combine(_root, "new.txt");
+        string oldFile = Path.Combine(_root, "old.txt");
+        File.WriteAllText(oldFile, @"D:\Old.Date");
+
+        Assert.Null(DataRootLocator.ReadRecordedRoot(newFile));
+    }
+
+    [Fact]
+    public void 迁移_旧记录复制到新位置并删除旧文件()
+    {
+        string newFile = Path.Combine(_root, "migrated", "new.txt");
+        string oldFile = Path.Combine(_root, "old.txt");
+        File.WriteAllText(oldFile, @"D:\Old.Date");
+
+        Assert.True(DataRootLocator.MigrateLegacyRecord(newFile, oldFile));
+        Assert.Equal(@"D:\Old.Date", DataRootLocator.ReadRecordedRoot(newFile, oldFile));
+        Assert.False(File.Exists(oldFile));
+    }
+
+    [Fact]
+    public void 迁移_新位置已有记录_不覆盖()
+    {
+        string newFile = Path.Combine(_root, "new.txt");
+        string oldFile = Path.Combine(_root, "old.txt");
+        File.WriteAllText(newFile, @"D:\New.Date");
+        File.WriteAllText(oldFile, @"D:\Old.Date");
+
+        Assert.False(DataRootLocator.MigrateLegacyRecord(newFile, oldFile));
+        Assert.Equal(@"D:\New.Date", DataRootLocator.ReadRecordedRoot(newFile, oldFile));
+        Assert.True(File.Exists(oldFile)); // 未覆盖时旧文件保持原样
+    }
+
+    [Fact]
+    public void 迁移_旧位置无记录_不创建新文件()
+    {
+        string newFile = Path.Combine(_root, "new.txt");
+        string oldFile = Path.Combine(_root, "old.txt");
+
+        Assert.False(DataRootLocator.MigrateLegacyRecord(newFile, oldFile));
+        Assert.False(File.Exists(newFile));
+    }
+
+    [Fact]
+    public void 迁移_旧记录为空白_视为无记录()
+    {
+        string newFile = Path.Combine(_root, "new.txt");
+        string oldFile = Path.Combine(_root, "old.txt");
+        File.WriteAllText(oldFile, "   \n");
+
+        Assert.False(DataRootLocator.MigrateLegacyRecord(newFile, oldFile));
+        Assert.False(File.Exists(newFile));
+    }
+
+    [Fact]
+    public void 决策_旧记录回落命中_仍认得原数据根()
+    {
+        string valid = CreateValidDataRoot("legacy");
+        string newFile = Path.Combine(_root, "new.txt");
+        string oldFile = Path.Combine(_root, "old.txt");
+        File.WriteAllText(oldFile, valid);
+
+        // 模拟 ResolveRootPath 决策链第 1 层：记录（含回落）有效即直接采用，不弹恢复窗
+        string? recorded = DataRootLocator.ReadRecordedRoot(newFile, oldFile);
+        Assert.Equal(valid, recorded);
+        Assert.True(DataRootLocator.IsValidDataRoot(recorded!));
+    }
+
     // ===== 深扫 SearchDeepAsync =====
 
     [Fact]

@@ -1,4 +1,4 @@
-// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 斜月Spirit
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using System;
@@ -20,10 +20,21 @@ namespace MS_SafetyManagementSystem.Services
     {
         private readonly Dictionary<string, DateTime> _lastSeen = new();
 
+        /// <summary>
+        /// 默认心跳超时（10 秒）。取值依据：手机端每 3 秒 ping 一次，10 秒 = 容忍 3 次连续丢失，
+        /// 足够抗 Wi-Fi 抖动，又不至于像原 30 秒那样让"切到后台"的用户干等。
+        /// 手机端仅在页面可见时上报心跳（见 Resources/*_page.html）→ 切后台/锁屏即停止上报，
+        /// 最长 Timeout + 巡检间隔（2 秒）≈ 12 秒内归零。
+        /// </summary>
+        public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(10);
+
         /// <summary>心跳超时：超过此时长无任何授权请求视为已断开（正常关页由 /bye 即时移除，此处仅兜底）</summary>
         public TimeSpan Timeout { get; }
 
         public LanDeviceTracker(TimeSpan timeout) => Timeout = timeout;
+
+        /// <summary>以 <see cref="DefaultTimeout"/> 构造（三个 LAN 窗口使用，避免超时值散落多处）</summary>
+        public LanDeviceTracker() : this(DefaultTimeout) { }
 
         /// <summary>当前在线设备数</summary>
         public int Count => _lastSeen.Count;

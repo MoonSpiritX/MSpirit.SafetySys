@@ -1,4 +1,16 @@
 <Project>
+  <!-- 统一版本号（2026-10-17）：主程序 / 启动器 / 更新器共用这一个来源，升版只改 $SafetySysVersion 一处。
+       定版时仍需同步两处不能自动继承的地方：
+         1) MSpirit.SafetySys.Package\AppxManifest.xml 的 Identity/@Version（MSIX 清单是静态 XML，读不到 MSBuild 属性）
+         2) CHANGELOG.md 条目标题 + AboutWindow 的 BuildChangelogText()
+       规则见 docs\版本号管理方案.md -->
+  <PropertyGroup>
+    <SafetySysVersion>1.2.3.0</SafetySysVersion>
+    <Version>$(SafetySysVersion)</Version>
+    <AssemblyVersion>$(SafetySysVersion)</AssemblyVersion>
+    <FileVersion>$(SafetySysVersion)</FileVersion>
+  </PropertyGroup>
+
   <PropertyGroup>
     <!-- 默认 Configuration：不带 -c 构建时 $(Configuration) 为空会导致 OutputPath 漂移，此处兜底 -->
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>

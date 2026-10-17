@@ -8,17 +8,26 @@
     <NoWarn>NU1701</NoWarn>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <Authors>AXin</Authors>
+    <Authors>斜月Spirit</Authors>
     <Product>斜月安全管理系统（个人版）</Product>
     <AssemblyName>MSpirit.SafetySys</AssemblyName>
     <AssemblyTitle>斜月安全管理系统</AssemblyTitle>
-    <Version>1.2.0.0</Version>
-    <AssemblyVersion>1.2.0.0</AssemblyVersion>
-    <FileVersion>1.2.0.0</FileVersion>
-    <ApplicationIcon>斜月安全管理系统.ico</ApplicationIcon>
+    <!-- 版本号（Version / AssemblyVersion / FileVersion）统一由根 Directory.Build.props
+         的 SafetySysVersion 注入（2026-10-17），此处不再单独定义，避免多处手工同步漂移 -->
+
+    <!-- 应用图标（2026-10-17）：exe 内嵌图标 = 桌面快捷方式、任务栏、Alt+Tab、文件关联全部取它。
+         源文件已是 16/32/48/64/128/256 六档 ico，无需再做分档微调。 -->
+    <ApplicationIcon>Resources\斜月安全管理系统图标256.ico</ApplicationIcon>
     <PackageIcon>MSAI.png</PackageIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <SignAssembly>False</SignAssembly>
+    <!-- 卫星程序集裁剪（2026-10-16）：只保留中文（简/繁）与英文资源，其余 11 种语言目录
+         （cs / de / es / fr / it / ja / ko / pl / pt-BR / ru / tr）不再生成。
+         作用域覆盖本工程**所有**发布形态（MSIX 包、绿色版），MSIX 包内体积因此下降。
+         注意：若某个依赖库只提供非中性语言资源（无中性资源），删掉卫星程序集后可能抛
+         MissingManifestResourceException——本工程依赖（WPF-UI / PaddleOCR / SkiaSharp 等）
+         均有中性资源，实测正常。新增依赖时若出现该异常，把对应语言加回此列表即可。 -->
+    <SatelliteResourceLanguages>zh-Hans;zh-Hant;en</SatelliteResourceLanguages>
     <!-- 输出路径由根目录 Directory.Build.props 统一管理（平铺到根 bin\，无 TFM/RID 子目录） -->
   </PropertyGroup>
 
@@ -70,11 +79,9 @@
     <None Remove="Resources\CheckNone.png" />
     <None Remove="Resources\Dates.png" />
     <None Remove="Resources\Documents.png" />
-    <None Remove="Resources\FoolMoon.png" />
     <None Remove="Resources\Module.png" />
     <None Remove="Resources\Projects.png" />
     <None Remove="Resources\Settings.png" />
-    <None Remove="Resources\斜月安全管理系统256.png" />
     <None Remove="【测试】MS_SafetyManagementSystem.exe.lnk" />
   </ItemGroup>
 	
@@ -95,14 +102,14 @@
     <Resource Include="Resources\Check.png" />
     <Resource Include="Resources\CheckNone.png" />
     <Resource Include="Resources\Documents.png" />
-    <Resource Include="Resources\FoolMoon.png" />
     <Resource Include="Resources\Module.png" />
     <Resource Include="Resources\Projects.png" />
     <Resource Include="Resources\Settings.png" />
-    <Resource Include="Resources\斜月安全管理系统256.png" />
+    <!-- 应用图标（2026-10-17 统一）：png 供所有窗口标题栏；exe 图标由上方 ApplicationIcon 嵌入，
+         托盘直接读 exe 图标组，故 ico 不需要再作为 WPF 资源重复嵌入一份 -->
+    <Resource Include="Resources\斜月安全管理系统图标256.png" />
     <Resource Include="Resources\AuthorDouyinQR.jpg" />
     <Resource Include="Resources\CreateTableExample.png" />
-    <Resource Include="斜月安全管理系统.ico" />
     <None Update="Resources\lan_page.html" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Resources\hazard_lan_page.html" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Resources\photo_transfer_page.html" CopyToOutputDirectory="PreserveNewest" />

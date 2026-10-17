@@ -20,7 +20,7 @@
 
         <controls:WindowTitleBar x:Name="TitleBarControl"
                                  Grid.Row="0"
-                                 Icon="pack://application:,,,/Resources/FoolMoon.png"
+                                 Icon="pack://application:,,,/Resources/斜月安全管理系统图标256.png"
                                  Title="输入"
                                  ShowMinimizeButton="False"
                                  ShowMaximizeButton="False"/>

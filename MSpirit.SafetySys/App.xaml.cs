@@ -1,4 +1,4 @@
-// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 斜月Spirit
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using Microsoft.Data.Sqlite;
@@ -50,13 +50,8 @@ namespace MS_SafetyManagementSystem
                 return;
             }
 
-            string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs", "debug.log");
-            Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
-                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-                .WriteTo.File(logPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7, encoding: System.Text.Encoding.UTF8)
-                .WriteTo.Console()
-                .CreateLogger();
+            // 日志初始化（必须最先：后续数据根解析本身就要写日志）
+            InitLogging();
 
             Log.Information("=== 斜月安全管理系统启动 ===");
 
@@ -105,17 +100,51 @@ namespace MS_SafetyManagementSystem
         }
 
         /// <summary>
+        /// 统一初始化 Serilog（主进程与查看器子进程共用，2026-10-15 合并原先两处重复代码）。
+        /// 日志目录固定为 %USERPROFILE%\MSpirit.SafetySys\logs\：
+        /// <para>
+        /// ① 不写在程序目录旁——MSIX 下安装目录 C:\Program Files\WindowsApps 只读，日志会静默失败；
+        /// </para>
+        /// <para>
+        /// ② 不写在 %LOCALAPPDATA%——MSIX 会重定向到包私有目录，卸载即清空，排障时拿不到旧日志。
+        /// </para>
+        /// 用户目录两不沾：启动第一行即可写、卸载后仍保留、绿色版与商店版行为一致。
+        /// </summary>
+        /// <param name="writeToConsole">是否同时输出到控制台（主进程 true，查看器子进程 false）</param>
+        private static void InitLogging(bool writeToConsole = true)
+        {
+            var config = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning);
+
+            try
+            {
+                string logPath = AppPaths.LogFilePath;
+                Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
+                config = config.WriteTo.File(
+                    logPath,
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 7,
+                    encoding: System.Text.Encoding.UTF8);
+            }
+            catch (Exception ex)
+            {
+                // 日志目录不可写（极端权限受限）时降级为不落盘，绝不让日志问题阻断启动
+                Console.WriteLine($"[日志] 无法写入日志文件，已降级为不落盘：{ex.Message}");
+            }
+
+            if (writeToConsole) config = config.WriteTo.Console();
+            Log.Logger = config.CreateLogger();
+        }
+
+        /// <summary>
         /// 从临时 JSON 文件读取图片列表并启动内置查看器（独立进程模式）。
         /// 绕过 SingleInstanceGuard 和主窗口，专供 --viewer 子进程使用。
         /// </summary>
         private static void LaunchViewerProcess(string tempFilePath)
         {
             // 子进程也需初始化 Serilog，否则 Log.Information 静默失败（无 Logger 输出）
-            string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs", "debug.log");
-            Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
-                .WriteTo.File(logPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7, encoding: System.Text.Encoding.UTF8)
-                .CreateLogger();
+            InitLogging(writeToConsole: false);
             Log.Information("=== 图片查看器子进程启动 ===");
 
             try

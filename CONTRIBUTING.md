@@ -8,7 +8,7 @@
 
 ## 如何反馈问题
 
-- **Bug 报告**请包含：软件版本、Windows 版本、复现步骤、预期结果与实际结果；如涉及崩溃或异常，请附上程序目录下 `logs\debug*.log` 中当天日志的相关片段。
+- **Bug 报告**请包含：软件版本、Windows 版本、复现步骤、预期结果与实际结果；如涉及崩溃或异常，请附上用户目录下 `%USERPROFILE%\MSpirit.SafetySys\logs\debug*.log` 中当天日志的相关片段。
 - **功能建议**请说明使用场景与期望行为，越具体越好。
 - 反馈渠道：请在仓库 [Issue 区](https://github.com/MoonSpiritX/MSpirit.SafetySys/issues) 提交（Bug 报告与功能建议请按模板填写）；其他联系方式见文末「联系作者」。
 
@@ -32,7 +32,7 @@ dotnet publish MS_SafetyManagementSystem.csproj -c Release -r win-x64 --self-con
 - **命名**：遵循 .NET 惯例（类型与成员 PascalCase、局部变量 camelCase）；代码注释与 UI 文案使用中文。
 - **日志**：使用 Serilog 并区分级别（`Information` / `Debug` / `Warning` / `Error`）；高频路径使用 `Debug` 避免日志量过大。
 - **SPDX 头**：新增/修改源码文件请保留文件头：
-  `// Copyright (C) 2026 AXin（斜月Spirit）`
+  `// Copyright (C) 2026 斜月Spirit`
   `// SPDX-License-Identifier: AGPL-3.0-or-later`
 - **依赖**：不引入未在 `.csproj` 声明的包；第三方依赖须与 AGPL-3.0 兼容（MIT / Apache-2.0 等）。
 
@@ -65,4 +65,4 @@ dotnet publish MS_SafetyManagementSystem.csproj -c Release -r win-x64 --self-con
 
 - 本项目以 AGPL-3.0 开源发布，全文见根目录 [`LICENSE`](LICENSE)。
 - 第三方组件许可清单见根目录 [`THIRD-PARTY-NOTICES`](THIRD-PARTY-NOTICES)。
-- 商业授权 / 闭源集成需求请联系作者（AXin / 斜月Spirit）。
+- 商业授权 / 闭源集成需求请联系作者（斜月Spirit）。

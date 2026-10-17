@@ -4,7 +4,7 @@
 
 > **简体中文（Chinese）**：[docs/README.md](docs/README.md)
 
-A local desktop safety management system for safety management in physical-industry enterprises (construction, manufacturing, production, etc.) — daily safety inspection records and personnel management. Currently **Personal Edition V1.2** (version 1.2.0.0).
+A local desktop safety management system for safety management in physical-industry enterprises (construction, manufacturing, production, etc.) — daily safety inspection records and personnel management. Currently **Personal Edition V1.2** (version 1.2.2.0).
 
 ## Features
 
@@ -43,7 +43,7 @@ A local desktop safety management system for safety management in physical-indus
 
 ## Maintenance status
 
-This project is developed and maintained by **a single author** (AXin / 斜月Spirit) in spare time, so updates come at **irregular intervals**.
+This project is developed and maintained by **a single author** (MSpirit / 斜月Spirit) in spare time, so updates come at **irregular intervals**.
 
 - Bug reports, feature suggestions and usage questions are welcome — please open an [Issue](https://github.com/MoonSpiritX/MSpirit.SafetySys/issues) using the provided templates.
 - **No additional maintainers are being added, and external pull requests are not accepted at this stage.** If you have a concrete idea for a code change, open an issue first; the author will decide whether and how to implement it.
@@ -88,10 +88,10 @@ You can also open `MSpirit.SafetySys.slnx` in Visual Studio and press F5.
 
 ## Data Storage & Backup (Important)
 
-- **Data root**: defaults to `{drive}\MSpirit.SafetySys.Date` on the first available non-system fixed drive (alphabetical order D→E→F…); falls back to `%LOCALAPPDATA%\MSpirit.SafetySys.Date` when no such drive exists. The startup flow remembers the last used data root and can guide recovery (manual pick / full-disk search) if it goes missing (e.g. drive unplugged or drive letter changed). See `Services/DataRootLocator.cs`.
+- **Data root**: defaults to `{drive}\MSpirit.SafetySys.Date` on the first available non-system fixed drive (alphabetical order D→E→F…); falls back to `%USERPROFILE%\MSpirit.SafetySys.Date` when no such drive exists. The startup flow remembers the last used data root and can guide recovery (manual pick / full-disk search) if it goes missing (e.g. drive unplugged or drive letter changed). See `Services/DataRootLocator.cs`.
 - **Databases**: `master.db` at the data root (project list); each project's data in `ProjectsDate\Project_{id}\data.db`.
 - **Attachments**: `ProjectsDate\Project_{id}\{module}_{yyyy-MM}\Card_{recordId}\`, thumbnails in the `thumb\` subfolder.
-- **Logs**: `logs\debug*.log` next to the program (daily rolling, 7-day retention).
+- **Logs**: `%USERPROFILE%\MSpirit.SafetySys\logs\debug*.log` (under your user profile folder; daily rolling, 7-day retention).
 - **Automatic backup**: the program backs up databases and configs to the `ProjectsDate.Backup` folder (under the data root) on startup and shutdown, keeping backups for the latest 30 days (capped at 100 copies). For long-term backup, close the program and copy the entire data root (including `master.db` and `ProjectsDate`), or export a `.msarch` archive package from "Project & Archive Management".
 
 ## Project Structure
@@ -127,7 +127,7 @@ MS_SafetyManagementSystem/
 
 > **Status**: the source code is **publicly available** in this repository, released under `AGPL-3.0-or-later`. The license statements below are in effect.
 
-This project is released under the **GNU Affero General Public License v3.0 (`AGPL-3.0-or-later`)**, copyright AXin (斜月Spirit). The full license text is in the root [`LICENSE`](../LICENSE).
+This project is released under the **GNU Affero General Public License v3.0 (`AGPL-3.0-or-later`)**, copyright MSpirit (斜月Spirit). The full license text is in the root [`LICENSE`](../LICENSE).
 
 Quick summary for non-developers:
 
@@ -140,7 +140,7 @@ Third-party component licenses are listed in the root [`THIRD-PARTY-NOTICES`](..
 
 **Privacy policy** (for store submission and general reference): <https://github.com/MoonSpiritX/MSpirit.SafetySys/blob/master/docs/PRIVACY_POLICY.md>
 
-**Commercial licensing**: companies/organizations that need closed-source integration, commercial distribution, or an exemption from AGPL obligations may contact the author (AXin / 斜月Spirit).
+**Commercial licensing**: companies/organizations that need closed-source integration, commercial distribution, or an exemption from AGPL obligations may contact the author (MSpirit / 斜月Spirit).
 
 ## Related Documents
 

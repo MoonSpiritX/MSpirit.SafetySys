@@ -1,6 +1,6 @@
 ---
 name: versioning-policy
-description: 斜月安全管理系统（MS_SafetyManagementSystem）版本号定版方案。当需要确定/递增版本号、发版定版、同步 CHANGELOG 与 AboutWindow 更新日志时使用。触发词：定版、版本号、递增版本、发版、三处同步、Version、AssemblyVersion、更新日志。
+description: 斜月安全管理系统（MS_SafetyManagementSystem）版本号定版方案。当需要确定/递增版本号、发版定版、同步 CHANGELOG 与 AboutWindow 更新日志时使用。触发词：定版、版本号、递增版本、发版、改版本、Version、AssemblyVersion、更新日志。
 agent_created: true
 ---
 
@@ -32,13 +32,14 @@ agent_created: true
    ```
 3. **幅度判定以"对用户的影响"为准**：用户能感知的新能力 → 功能号；用户感知"坏了/变样了"→ 修订号；几乎无感知的小调整 → 微调号。
 
-## 定版时机与三处同步（缺一不可）
+## 定版时机与同步点（缺一不可）
 
-定版时机：**一批变更完成、准备制作更新包时**。定版时一次改齐三处：
+定版时机：**一批变更完成、准备制作更新包时**。定版时改齐四处（**数字只改 1 处**）：
 
-1. `MS_SafetyManagementSystem.csproj` 的 `Version` / `AssemblyVersion` / `FileVersion`（三处值一致）；
-2. `CHANGELOG.md` 对应条目标题（`## [x.y.z.w] - 日期`）；
-3. `Views/AboutWindow.xaml.cs` 更新日志 `ChangelogData` 数组的版本标题 + 定版日期（日期格式 `（yyyy-MM-dd）`，与 CHANGELOG 标题行一致）。
+1. **根 `Directory.Build.props` 的 `SafetySysVersion`** —— 唯一数字来源；主程序、绿色版启动器（`斜月安全管理系统.exe`）、`Updater.exe` 三者的 `Version` / `AssemblyVersion` / `FileVersion` 全部由它注入。各工程 csproj **不再**单独写版本号（写了会覆盖注入值，等于造出第二个来源）；
+2. `MSpirit.SafetySys.Package/AppxManifest.xml` 的 `Identity/@Version` —— MSIX 清单是静态 XML，读不到 MSBuild 属性，必须手工同步（第 4 段按商店要求固定为 0）；
+3. `CHANGELOG.md` 对应条目标题（`## [x.y.z.w] - 日期`）；
+4. `Views/AboutWindow.xaml.cs` 更新日志 `ChangelogData` 数组的版本标题 + 定版日期（日期格式 `（yyyy-MM-dd）`，与 CHANGELOG 标题行一致）。
 
 README 等文档中的版本号：定档发布时统一更新。
 

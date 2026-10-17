@@ -1,4 +1,4 @@
-// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 斜月Spirit
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using Serilog;
@@ -14,41 +14,100 @@ namespace MS_SafetyManagementSystem.Services
     /// <summary>
     /// 数据根定位器：解决"拔盘 / 盘符变化 / 环境漂移导致数据根找不到"的问题（2026-08-15）。
     /// 启动决策链（逐层降级，只有前一层失败才触发后一层）：
-    ///   1️⃣ 上次记录：%LOCALAPPDATA%\MSpirit.SafetySys\DataRoot.txt（独立于数据根，不随数据丢失）
+    ///   1️⃣ 上次记录：%USERPROFILE%\MSpirit.SafetySys\DataRoot.txt（独立于数据根，不随数据丢失）
     ///       → 有效（目录存在 + 含提示文件/master.db/ProjectsDate）→ 直接用；
-    ///   2️⃣ 浅扫：所有固定盘根 + LOCALAPPDATA 兜底位置找数据根 → 找到即用（盘符漂移自动恢复）；
+    ///   2️⃣ 浅扫：所有固定盘根 + 用户目录/LOCALAPPDATA 兜底位置找数据根 → 找到即用（盘符漂移自动恢复）；
     ///   3️⃣ 无记录（首启）→ 用默认路径并写记录，静默初始化；
     ///   4️⃣ 记录存在但失效 + 浅扫无果 → 返回 null，由 UI 弹窗引导（手动选择 / 全盘深扫 / 使用新位置）。
     /// 深扫（SearchDeepAsync）只由用户主动触发（异步、可取消、多结果选择），避免启动阻塞与误匹配。
+    /// <para>
+    /// 2026-10-15 变更（微软商店 MSIX 适配）：记录文件与兜底数据根由 %LOCALAPPDATA% 迁至 %USERPROFILE%。
+    /// MSIX 会把对 AppData 的新建写入重定向到包私有目录，卸载即清空；用户目录不受此虚拟化影响。
+    /// 旧位置保留**只读回落 + 自动迁移**，老用户升级后不会误弹"数据根丢失"弹窗。
+    /// </para>
     /// </summary>
     public static class DataRootLocator
     {
-        /// <summary>记录文件所在目录名（位于 %LOCALAPPDATA% 下，独立于数据根）</summary>
-        public const string RecordFolderName = "MSpirit.SafetySys";
+        /// <summary>记录文件所在目录名（位于 %USERPROFILE% 下，独立于数据根）</summary>
+        public const string RecordFolderName = AppPaths.AppFolderName;
 
         /// <summary>记录文件名</summary>
-        public const string RecordFileName = "DataRoot.txt";
+        public const string RecordFileName = AppPaths.RecordFileName;
 
-        /// <summary>记录文件默认完整路径</summary>
-        public static string RecordFilePath => Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            RecordFolderName, RecordFileName);
+        /// <summary>记录文件默认完整路径（%USERPROFILE%\MSpirit.SafetySys\DataRoot.txt）</summary>
+        public static string RecordFilePath => AppPaths.RecordFilePath;
+
+        /// <summary>旧版记录文件位置（%LOCALAPPDATA% 下）：仅读取回落用，不再写入</summary>
+        public static string LegacyRecordFilePath => AppPaths.LegacyRecordFilePath;
 
         // ==================== 记录读写 ====================
 
-        public static string? ReadRecordedRoot(string? recordFilePath = null)
+        /// <summary>
+        /// 读取记录的数据根。
+        /// 默认路径（recordFilePath 为 null）时启用旧位置回落：新位置无记录才去读 %LOCALAPPDATA% 旧位置，
+        /// 保证老用户升级后仍能找到原数据根。显式注入路径时（单元测试）不做回落，保持用例隔离。
+        /// </summary>
+        public static string? ReadRecordedRoot(string? recordFilePath = null, string? legacyRecordFilePath = null)
         {
             try
             {
                 string path = recordFilePath ?? RecordFilePath;
-                if (!File.Exists(path)) return null;
-                string text = File.ReadAllText(path).Trim();
-                return string.IsNullOrEmpty(text) ? null : text;
+                string? value = ReadRecordFile(path);
+                if (value == null)
+                {
+                    // 回落生效的两种情形：
+                    // ① 走默认路径（生产：老用户升级后旧记录还在 %LOCALAPPDATA%）；
+                    // ② 调用方显式注入了旧位置（单元测试：临时目录模拟）。
+                    // 仅注入新位置时（现有用例）不回落，保持用例隔离。
+                    string? legacyPath = legacyRecordFilePath
+                        ?? (recordFilePath == null ? LegacyRecordFilePath : null);
+                    if (legacyPath != null)
+                        value = ReadRecordFile(legacyPath);
+                }
+                return value;
             }
             catch (Exception ex)
             {
                 Log.Warning(ex, "[DataRoot] 读取数据根记录失败（按无记录处理）");
                 return null;
+            }
+        }
+
+        /// <summary>读取单个记录文件；文件不存在或内容为空均视为无记录</summary>
+        private static string? ReadRecordFile(string path)
+        {
+            if (!File.Exists(path)) return null;
+            string text = File.ReadAllText(path).Trim();
+            return string.IsNullOrEmpty(text) ? null : text;
+        }
+
+        /// <summary>
+        /// 旧记录迁移：新位置尚无记录、旧位置有时，把旧内容复制到新位置。
+        /// 迁移成功后尽力删除旧文件（失败可忽略——优先读新位置，旧文件残留不影响正确性）。
+        /// </summary>
+        /// <returns>是否发生了迁移</returns>
+        public static bool MigrateLegacyRecord(string? recordFilePath = null, string? legacyRecordFilePath = null)
+        {
+            string newPath = recordFilePath ?? RecordFilePath;
+            string oldPath = legacyRecordFilePath ?? LegacyRecordFilePath;
+            try
+            {
+                if (File.Exists(newPath) || !File.Exists(oldPath)) return false;
+
+                string? value = ReadRecordFile(oldPath);
+                if (value == null) return false;
+
+                Directory.CreateDirectory(Path.GetDirectoryName(newPath)!);
+                File.WriteAllText(newPath, value);
+                Log.Information("[DataRoot] 旧版数据根记录已迁移：{Old} → {New}", oldPath, newPath);
+
+                try { File.Delete(oldPath); } catch { /* 旧文件删除失败可忽略，不影响正确性 */ }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[DataRoot] 旧版数据根记录迁移失败（不影响本次启动）");
+                return false;
             }
         }
 
@@ -84,8 +143,9 @@ namespace MS_SafetyManagementSystem.Services
         // ==================== 浅扫（固定盘根 + LOCALAPPDATA 兜底位置） ====================
 
         /// <summary>
-        /// 浅扫所有"默认可能放置数据根"的位置：每个就绪固定盘根目录 + LOCALAPPDATA 兜底位置。
-        /// 覆盖当前产品形态下的全部真实场景（数据根只可能在这两处，除非用户手动移动）。
+        /// 浅扫所有"默认可能放置数据根"的位置：
+        /// 每个就绪固定盘根目录 + 用户目录兜底位置（2026-10-15 起）+ LOCALAPPDATA 旧位置（老版本遗留）。
+        /// 覆盖当前产品形态下的全部真实场景（数据根只可能在这几处，除非用户手动移动）。
         /// </summary>
         public static List<string> FindCandidateRoots()
         {
@@ -98,11 +158,14 @@ namespace MS_SafetyManagementSystem.Services
                     result.Add(candidate);
             }
 
-            // LOCALAPPDATA 兜底位置（老版本数据在此；新插盘导致算法漂移后仍能找到老数据）
-            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            string fallback = Path.Combine(localAppData, DataPathService.DataRootFolderName);
-            if (IsValidDataRoot(fallback) && !result.Contains(fallback))
-                result.Add(fallback);
+            // 用户目录兜底位置（当前默认；单盘机器的最终落点）
+            // + LOCALAPPDATA 旧位置（老版本数据在此；新插盘导致算法漂移后仍能找到老数据）
+            var extraRoots = new[] { AppPaths.FallbackDataRootPath, AppPaths.LegacyFallbackDataRootPath };
+            foreach (var extra in extraRoots)
+            {
+                if (IsValidDataRoot(extra) && !result.Contains(extra))
+                    result.Add(extra);
+            }
 
             return result;
         }
@@ -179,6 +242,8 @@ namespace MS_SafetyManagementSystem.Services
         /// </summary>
         public static string? ResolveRootPath()
         {
+            // 迁移必须在读取记录之前：老用户首次升级时旧记录还在 %LOCALAPPDATA%
+            MigrateLegacyRecord();
             return ResolveRootPath(FindCandidateRoots(), RecordFilePath);
         }
 

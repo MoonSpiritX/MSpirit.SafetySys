@@ -20,7 +20,7 @@ labels: bug
 3.
 
 **日志**（涉及崩溃/异常时必填）
-程序目录 `logs\debug*.log` 中当天的日志片段。
+用户目录 `%USERPROFILE%\MSpirit.SafetySys\logs\debug*.log` 中当天的日志片段（在文件管理器地址栏输入 `%USERPROFILE%\MSpirit.SafetySys\logs` 回车即可到达）。
 
 **其他信息**
 （截图、操作习惯等）

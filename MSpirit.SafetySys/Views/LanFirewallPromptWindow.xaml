@@ -19,7 +19,7 @@
         </Grid.RowDefinitions>
 
         <controls:WindowTitleBar Grid.Row="0"
-                                 Icon="pack://application:,,,/Resources/FoolMoon.png"
+                                 Icon="pack://application:,,,/Resources/斜月安全管理系统图标256.png"
                                  Title="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}"
                                  ShowMinimizeButton="False"
                                  ShowMaximizeButton="False"/>
@@ -41,19 +41,44 @@
                            TextWrapping="Wrap" FontSize="11pt" Foreground="#666" Margin="0,0,0,3"/>
                 <TextBlock x:Name="Step3Text"
                            TextWrapping="Wrap" FontSize="11pt" Foreground="#666" Margin="0,0,0,3"/>
+                <TextBlock x:Name="StepExtraText"
+                           TextWrapping="Wrap" FontSize="11pt" Foreground="#666" Margin="0,0,0,3"
+                           Visibility="Collapsed"/>
                 <TextBlock x:Name="SkipNoteText"
                            TextWrapping="Wrap" FontSize="10.5pt" Foreground="#999" Margin="0,10,0,0"/>
+                <TextBlock x:Name="RecheckHintText"
+                           TextWrapping="Wrap" FontSize="10.5pt" Foreground="#C42B1C" Margin="0,8,0,0"
+                           Visibility="Collapsed"/>
             </StackPanel>
 
-            <StackPanel Grid.Row="1"
-                        Orientation="Horizontal"
-                        HorizontalAlignment="Center"
-                        Margin="0,18,0,6">
-                <Button x:Name="AllowButton" Content="立即放行（推荐）"
-                        Style="{StaticResource DialogButtonStyle}" IsDefault="True"
-                        Margin="0,0,10,0"/>
-                <Button x:Name="SkipButton" Content="暂不"
-                        Style="{StaticResource DialogButtonStyle}" IsCancel="True"/>
+            <StackPanel Grid.Row="1" Margin="0,18,0,6">
+                <!-- 非打包形态：一键 UAC 放行 -->
+                <StackPanel x:Name="MainButtonRow"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center">
+                    <Button x:Name="AllowButton" Content="立即放行（推荐）"
+                            Style="{StaticResource DialogButtonStyle}" IsDefault="True"
+                            Margin="0,0,10,0"/>
+                    <Button x:Name="SkipButton" Content="暂不"
+                            Style="{StaticResource DialogButtonStyle}" IsCancel="True"/>
+                </StackPanel>
+                <!-- 包内（商店版）：无自助提权，只能手动配置 → 文案较长，宽度改 Auto 自适应 -->
+                <StackPanel x:Name="ManualButtonRow"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            Visibility="Collapsed">
+                    <!-- 间距统一用 DialogButtonStyle 自带的 Margin="10,0,0,0"：
+                         该样式已含左边距 10，若再给首按钮加 "0,0,10,0" 会让 4 个按钮出现 20/10/10 的不均匀间距 -->
+                    <Button x:Name="OpenFirewallSettingsButton" Content="打开防火墙设置"
+                            Style="{StaticResource DialogButtonStyle}" Width="Auto"/>
+                    <Button x:Name="RecheckButton" Content="重新检测"
+                            Style="{StaticResource DialogButtonStyle}" Width="Auto"/>
+                    <Button x:Name="CopyCommandButton" Content="复制命令"
+                            Style="{StaticResource DialogButtonStyle}" Width="Auto"/>
+                    <Button x:Name="ManualCloseButton" Content="关闭"
+                            Style="{StaticResource DialogButtonStyle}" Width="Auto"
+                            IsCancel="True"/>
+                </StackPanel>
             </StackPanel>
         </Grid>
     </Grid>

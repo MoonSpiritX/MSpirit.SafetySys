@@ -1,4 +1,4 @@
-// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 斜月Spirit
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using System.Text;
@@ -152,10 +152,9 @@ namespace MSpirit.SafetySys.Tests
         }
 
         [Fact]
-        public void StartPort与EndPort_跟随LanPorts常量()
+        public void StartPort_跟随LanPorts常量()
         {
             Assert.Equal(LanPorts.Start, LanFirewallService.StartPort);
-            Assert.Equal(LanPorts.FirewallEnd, LanFirewallService.EndPort);
         }
 
         // ==================== 程序级阻止规则（TryGetProgramBlockPath） ====================
@@ -264,6 +263,137 @@ namespace MSpirit.SafetySys.Tests
         public void ProgramBlock规则_按Allow解析_不命中()
         {
             Assert.False(LanFirewallService.TryGetProgramRulePath(RealProgramBlockRule, @"F:\x\app.exe", "Allow", out _));
+        }
+
+        // ==================== ProgramPathEquals（2026-10-15：MSIX 盘符联接假阴性修复） ====================
+        // 背景（实测，见 临时文档/R3-LAN防火墙MSIX适配方案.md §11.9）：
+        //   系统盘不是唯一安装位置时，包实体落在 D:\WindowsApps\<包全名>\，
+        //   而 C:\Program Files\WindowsApps\<包全名> 只是**目录联接**（ReparsePoint）。
+        //   系统按清单 windows.firewallRules 自建的规则里 Program 记的是 **D:** 路径，
+        //   进程自报的 Environment.ProcessPath 却是 **C:** 路径（实测 Id=14248）→
+        //   原样字符串比对必然不等 → 检测假阴性 → 包内每次点「启动服务」都弹手动指引窗。
+        //   修法：第 ③ 级「父目录名 == 当前包全名 且 文件名相同」，且**仅在包内启用**。
+        // 注意：下面两个常量刻意保持与真实值同构（含发布者哈希），改动时同步。
+
+        private const string PkgFullName = "Spirit.31431668B8E26F_1.2.2.0_x64__n4fgvp176crcr";
+        private const string PkgExeOnC = @"C:\Program Files\WindowsApps\" + PkgFullName + @"\MSpirit.SafetySys.exe";
+        private const string PkgExeOnD = @"D:\WindowsApps\" + PkgFullName + @"\MSpirit.SafetySys.exe";
+        /// <summary>绿色版/开发实例的遗留规则路径（父目录名是 Debug.SafetySys，不是包全名）</summary>
+        private const string GreenExe = @"F:\【Program】\MSpirit.SafetySys\bin\Debug.SafetySys\MSpirit.SafetySys.exe";
+
+        /// <summary>构造一条程序级入站规则文本（英文标签形态，Program 行可控）</summary>
+        private static string ProgramRuleBlock(
+            string programPath,
+            string action = "Allow",
+            string protocol = "TCP",
+            string profiles = "Domain,Private,Public") =>
+            "Rule Name:                            斜月安全管理系统\r\n" +
+            "Enabled:                              Yes\r\n" +
+            "Direction:                            In\r\n" +
+            $"Profiles:                             {profiles}\r\n" +
+            "LocalIP:                              Any\r\n" +
+            "RemoteIP:                             Any\r\n" +
+            $"Protocol:                             {protocol}\r\n" +
+            "LocalPort:                            Any\r\n" +
+            "RemotePort:                           Any\r\n" +
+            $"Program:                              {programPath}\r\n" +
+            "InterfaceTypes:                       Any\r\n" +
+            $"Action:                               {action}\r\n";
+
+        [Fact]
+        public void ProgramPathEquals_原样相同_大小写不同也算命中()
+        {
+            Assert.True(LanFirewallService.ProgramPathEquals(PkgExeOnC, PkgExeOnC.ToLowerInvariant()));
+        }
+
+        [Fact]
+        public void ProgramPathEquals_正斜杠与尾随空白分隔符_规范化后命中()
+        {
+            Assert.True(LanFirewallService.ProgramPathEquals(
+                @"C:/Program Files/WindowsApps/x.exe  ", @"C:\Program Files\WindowsApps\x.exe\"));
+        }
+
+        [Fact]
+        public void ProgramPathEquals_盘符联接_规则记D盘进程报C盘_包内命中()
+        {
+            // 核心修复点：本机实测的真实形态
+            Assert.True(LanFirewallService.ProgramPathEquals(PkgExeOnD, PkgExeOnC, PkgFullName));
+            Assert.True(LanFirewallService.ProgramPathEquals(PkgExeOnC, PkgExeOnD, PkgFullName));
+        }
+
+        [Fact]
+        public void ProgramPathEquals_盘符联接_非包内_不命中()
+        {
+            // 守护：第 ③ 级只在包内启用 → 非包内（绿色版/开发实例）行为与修复前完全一致
+            Assert.False(LanFirewallService.ProgramPathEquals(PkgExeOnD, PkgExeOnC));
+            Assert.False(LanFirewallService.ProgramPathEquals(PkgExeOnD, PkgExeOnC, null));
+            Assert.False(LanFirewallService.ProgramPathEquals(PkgExeOnD, PkgExeOnC, "   "));
+        }
+
+        [Fact]
+        public void ProgramPathEquals_包内_父目录不是本包全名_不命中()
+        {
+            // 守护：绿色版的遗留 Debug 放行规则不得被判成"包内已放行"
+            // （它对本机包内进程其实毫无作用，漏判只是多弹一次窗；误判则会让手机连不上却无引导）
+            Assert.False(LanFirewallService.ProgramPathEquals(GreenExe, PkgExeOnC, PkgFullName));
+            Assert.False(LanFirewallService.ProgramPathEquals(GreenExe, PkgExeOnD, PkgFullName));
+        }
+
+        [Fact]
+        public void ProgramPathEquals_包内_同一包目录但文件名不同_不命中()
+        {
+            Assert.False(LanFirewallService.ProgramPathEquals(
+                @"D:\WindowsApps\" + PkgFullName + @"\Other.exe", PkgExeOnC, PkgFullName));
+        }
+
+        [Fact]
+        public void ProgramPathEquals_不同目录的同名exe_不命中()
+        {
+            // 守护 2026-08-16 修的 P0：别的程序的规则不得被判为本程序放行
+            Assert.False(LanFirewallService.ProgramPathEquals(@"D:\other\MSpirit.SafetySys.exe", PkgExeOnC, PkgFullName));
+            Assert.False(LanFirewallService.ProgramPathEquals(@"D:\other\MSpirit.SafetySys.exe", PkgExeOnC));
+        }
+
+        [Theory]
+        [InlineData(null, PkgExeOnC)]
+        [InlineData("", PkgExeOnC)]
+        [InlineData("   ", PkgExeOnC)]
+        [InlineData(PkgExeOnC, "")]
+        public void ProgramPathEquals_空路径_不命中(string? rulePath, string exePath)
+        {
+            Assert.False(LanFirewallService.ProgramPathEquals(rulePath, exePath, PkgFullName));
+        }
+
+        [Fact]
+        public void TryGetProgramRulePath_规则记D盘进程报C盘_包内命中()
+        {
+            // 串起真实调用链：netsh 规则文本 → 解析 → 路径比对
+            bool ok = LanFirewallService.TryGetProgramRulePath(
+                ProgramRuleBlock(PkgExeOnD), PkgExeOnC, "Allow", out string? path, PkgFullName);
+            Assert.True(ok);
+            Assert.Equal(PkgExeOnD, path);   // 输出的是规则原文路径，供删除时原样回填
+        }
+
+        [Fact]
+        public void TryGetProgramRulePath_同一条规则_非包内不命中()
+        {
+            Assert.False(LanFirewallService.TryGetProgramRulePath(
+                ProgramRuleBlock(PkgExeOnD), PkgExeOnC, "Allow", out _, null));
+        }
+
+        [Fact]
+        public void RuleTextCoversStartPort_程序级规则记D盘进程报C盘_包内命中()
+        {
+            // 第二个受影响的调用点：端口级扫描（这条规则 LocalPort=Any，覆盖 LanPorts.Start）
+            Assert.True(LanFirewallService.RuleTextCoversStartPort(
+                ProgramRuleBlock(PkgExeOnD), PkgExeOnC, "Public", PkgFullName));
+        }
+
+        [Fact]
+        public void RuleTextCoversStartPort_同一条规则_非包内不命中()
+        {
+            Assert.False(LanFirewallService.RuleTextCoversStartPort(
+                ProgramRuleBlock(PkgExeOnD), PkgExeOnC, "Public", null));
         }
 
         // ==================== P0 回归：netsh 输出本地化（中文标签/GBK 编码） ====================
@@ -478,6 +608,136 @@ namespace MSpirit.SafetySys.Tests
         {
             Assert.Equal("", LanFirewallService.DecodeNetshText(Array.Empty<byte>()));
             Assert.Equal("", LanFirewallService.DecodeNetshText(null!));
+        }
+
+        // ==================== 放行动作决策（DecideAction，2026-10-15 新增） ====================
+        // R3：MSIX 包内无法自助提权（Process.Start(Verb=runas) 需 allowElevation，商店不批，
+        // 且其语义是"启动时提权"而非"运行中按需提权"）→ "该走哪条路"必须按形态分流。
+        // DecideAction 是纯函数，覆盖全部组合；包内分支的 UI 文案不在单测范围（需真实环境/手工冒烟）。
+
+        [Fact]
+        public void DecideAction_包外_无放行_走提权引导()
+        {
+            // 非打包形态（开发调试 / 未来商店外的 EXE、MSI 分发）：行为不退化
+            Assert.Equal(LanFirewallService.FirewallAction.PromptAndElevate,
+                LanFirewallService.DecideAction(packaged: false, hasProgramBlock: false, hasAllow: false));
+        }
+
+        [Fact]
+        public void DecideAction_包外_有阻止规则_走提权引导()
+        {
+            Assert.Equal(LanFirewallService.FirewallAction.PromptAndElevate,
+                LanFirewallService.DecideAction(packaged: false, hasProgramBlock: true, hasAllow: false));
+        }
+
+        [Fact]
+        public void DecideAction_包外_已有放行_直接放行()
+        {
+            Assert.Equal(LanFirewallService.FirewallAction.Proceed,
+                LanFirewallService.DecideAction(packaged: false, hasProgramBlock: false, hasAllow: true));
+        }
+
+        [Fact]
+        public void DecideAction_包内_无放行_走手动指引()
+        {
+            // 核心新增：包内绝不弹 UAC 引导，改为手动指引窗
+            Assert.Equal(LanFirewallService.FirewallAction.PromptManualOnly,
+                LanFirewallService.DecideAction(packaged: true, hasProgramBlock: false, hasAllow: false));
+        }
+
+        [Fact]
+        public void DecideAction_包内_有阻止规则_走手动指引()
+        {
+            // 死锁场景（商店版首次连接点「取消」生成阻止规则，程序自身删不掉）→ 仍走手动指引，绝不提权
+            Assert.Equal(LanFirewallService.FirewallAction.PromptManualOnly,
+                LanFirewallService.DecideAction(packaged: true, hasProgramBlock: true, hasAllow: false));
+        }
+
+        [Fact]
+        public void DecideAction_包内_已有放行_直接放行()
+        {
+            // R3a 生效（清单 windows.firewallRules 的规则被检测命中）即走此路：零交互
+            Assert.Equal(LanFirewallService.FirewallAction.Proceed,
+                LanFirewallService.DecideAction(packaged: true, hasProgramBlock: false, hasAllow: true));
+        }
+
+        [Fact]
+        public void DecideAction_有阻止规则时_即使有放行也不得直接放行()
+        {
+            // 程序级 Block 优先于放行规则（2026-08-15 实测）→ hasAllow 不得越过阻止判定
+            Assert.NotEqual(LanFirewallService.FirewallAction.Proceed,
+                LanFirewallService.DecideAction(packaged: false, hasProgramBlock: true, hasAllow: true));
+            Assert.NotEqual(LanFirewallService.FirewallAction.Proceed,
+                LanFirewallService.DecideAction(packaged: true, hasProgramBlock: true, hasAllow: true));
+        }
+
+        [Fact]
+        public void IsRunningPackaged_调用不抛异常()
+        {
+            // 值不稳定（测试宿主非包内；若本机设了调试开关 MS_SPIRIT_FORCE_PACKAGED=1 则为 true），
+            // 故只做"安全降级不抛异常"保护（GetCurrentPackageFullName 不可用时须回落 false）。
+            _ = LanFirewallService.IsRunningPackaged();
+        }
+
+        // ==================== 强制手动指引调试开关（TryForceManualPrompt，2026-10-15 新增） ====================
+        // 为什么需要：本机若已存在放行规则，DecideAction 会走 Proceed，手动指引窗**根本不弹**；
+        // 而禁用规则同样无效（检测逻辑不读 Enabled 字段，netsh 照列禁用规则）→ 未打包时
+        // 只能靠该开关绕过全部检测，才能目视验证窗口排版/按钮/文案。
+
+        [Fact]
+        public void TryForceManualPrompt_未设开关_返回false()
+        {
+            // 显式清空（而非依赖外部环境）：用户为目视验证设过该变量后跑测试，本用例仍须成立
+            WithEnv("MS_SPIRIT_FORCE_MANUAL_PROMPT", null, () =>
+            {
+                Assert.False(LanFirewallService.TryForceManualPrompt(out bool programBlocked));
+                Assert.False(programBlocked);
+            });
+        }
+
+        [Fact]
+        public void TryForceManualPrompt_设为1_返回true且按非阻止形态()
+        {
+            WithEnv("MS_SPIRIT_FORCE_MANUAL_PROMPT", "1", () =>
+            {
+                Assert.True(LanFirewallService.TryForceManualPrompt(out bool programBlocked));
+                Assert.False(programBlocked);
+            });
+        }
+
+        [Fact]
+        public void TryForceManualPrompt_设为block_返回true且按阻止形态()
+        {
+            WithEnv("MS_SPIRIT_FORCE_MANUAL_PROMPT", "block", () =>
+            {
+                Assert.True(LanFirewallService.TryForceManualPrompt(out bool programBlocked));
+                Assert.True(programBlocked);
+            });
+        }
+
+        [Fact]
+        public void TryForceManualPrompt_值忽略大小写与首尾空白()
+        {
+            WithEnv("MS_SPIRIT_FORCE_MANUAL_PROMPT", " BLOCK ", () =>
+            {
+                Assert.True(LanFirewallService.TryForceManualPrompt(out bool programBlocked));
+                Assert.True(programBlocked);
+            });
+        }
+
+        /// <summary>临时设置环境变量并在用例结束后还原（进程级全局状态，必须保证还原）</summary>
+        private static void WithEnv(string name, string? value, Action body)
+        {
+            string? old = Environment.GetEnvironmentVariable(name);
+            try
+            {
+                Environment.SetEnvironmentVariable(name, value);
+                body();
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(name, old);
+            }
         }
     }
 }

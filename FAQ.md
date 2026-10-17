@@ -8,7 +8,7 @@
 
 ## 2. 数据保存在哪里？会上传到云端吗？
 
-- 数据只保存在**本机**：默认 `D:\MSpirit.SafetySys.Date`（机器无 D 盘时为 `%LOCALAPPDATA%\MSpirit.SafetySys.Date`）；
+- 数据只保存在**本机**：默认 `D:\MSpirit.SafetySys.Date`（机器无 D 盘时为 `%USERPROFILE%\MSpirit.SafetySys.Date`）；
 - **不会上传**到任何云端服务器，纯本地运行；
 - "局域网录入"功能仅在你主动开启时、在**同一局域网**内接收手机提交的照片与信息，服务随窗口关闭即停止，不对公网开放。
 

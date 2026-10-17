@@ -2,6 +2,64 @@
 
 本项目所有重要变更记录于此。格式参照 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.2.3.0] - 2026-10-17
+
+### 新增
+
+- **程序图标全面更换**：采用新设计的品牌图标（深色圆角底 + 月牙与字母标识），替换沿用的旧月亮图标。正本收敛到单一来源 `MSpirit.SafetySys\Resources\斜月安全管理系统图标256.ico`（含 16/32/48/64/128/256 六档）与 `…256.png`（窗口标题栏用），文件名去掉了原有的空格（避免 pack URI 需 `%20` 转义、MSBuild 需引号两个长期坑）。覆盖范围：主程序 `ApplicationIcon`、**31 个窗口的标题栏与图像引用**、托盘图标、启动器与更新器的 `ApplicationIcon`、MSIX `Assets/` 三张（`Square44x44Logo` / `Square150x150Logo` / `StoreLogo`）。启动器与更新器原先各自持有一份 112 KB 的 ico 副本，现改为引用主工程同一份并删除副本 —— **此后换图标只需同名覆盖 `Resources` 里的 ico 与 png 两个文件后重新构建，31 处 XAML 与三个 exe 自动跟随**。
+
+### 修复
+
+- **导出界面「自定义时间范围」崩溃（`System.NullReferenceException`）**：`Controls/DropdownMenu.xaml.cs` 的 `Close()` 存在**重入缺陷**。根因：`Close()` 先调用 `ReleaseCaptureForAutoClose()` 释放鼠标捕获，`Mouse.Capture(null)` 会**同步把当前 MouseDown 重派发给真实命中元素**，触发调用方自身的 toggle 逻辑再次调用 `Close()`；内层执行完毕把 `_activePopup` 置 null，外层回来继续访问该字段即抛空引用 —— **判空挡不住，因为判空与使用之间字段被重入改写了**。修法：新增 `_isClosing` 重入守卫；`Close()` 改用局部变量持有弹层引用、释放捕获不再读字段；`ReleaseCaptureForAutoClose(Popup?)` 改为接收参数；以 `ReferenceEquals` 做引用比对，若释放捕获期间发生「关旧开新」则不清新弹层状态、不误触发 `Closed`。该控件被 9 处复用（导出界面 4 个菜单含 `ShowRightOf` 两级联动最易触发，另有日期选择器、记录卡片右键菜单等），一处修好全部生效。
+
+### 优化
+
+- **托盘图标按系统托盘尺寸取样**：原 `Icon.ExtractAssociatedIcon` 只能返回 32×32，在 150% 缩放（托盘实际 24×24）下由系统缩放导致边缘发虚；改为从 exe 图标资源按 `SystemInformation.SmallIconSize` 重建，并记录实际尺寸到日志。另说明：托盘图标此前并非「不显示」，而是深色底板上的暗色符号在浅色任务栏上缩到 24px 后几乎糊成一块，肉眼容易误判为缺失（已通过三态截屏差分与 `HKCU:\Control Panel\NotifyIconSettings` 注册表记录取证）。
+
+### 其他
+
+- **版本号 1.2.2.0 → 1.2.3.0**（当时为 csproj 三处 + 本文件 + `AboutWindow.xaml.cs`；同版本内随后收敛为单一来源，见下一条）。提升第 3 段的技术原因：Windows 对「同标识 + 同版本 + 内容不同」的包直接拒绝部署（`0x80073CFB`），而清单 `Version` 第四段按商店要求必须为 0，故覆盖安装只能靠提升第 3 段 —— 本机已安装 1.2.2.0，不提版本无法覆盖安装。
+- **版本号收敛为单一来源**：主程序、绿色版启动器（`斜月安全管理系统.exe`）、`Updater.exe` 三个工程的 `Version` / `AssemblyVersion` / `FileVersion` 改由根 `Directory.Build.props` 的 `SafetySysVersion` 统一注入，各 csproj 不再单独定义。此前启动器与更新器长期停在 `1.0.0.0`、`Product` 还写死「（个人版）V1.0」，与主程序的 1.2.3.0 不一致 —— 而绿色版的唯一入口正是启动器，用户右键看到的版本号会直接误导排障。此后升版只改 `SafetySysVersion` 一处；仍需手工同步的是 MSIX 清单 `Identity/@Version`（静态 XML 读不到 MSBuild 属性）与 CHANGELOG / AboutWindow 文本。
+- **作者署名统一为「斜月Spirit」**：移除程序内残留的英文名 `AXin`。范围包括 ① 关于窗口「笔名」行与「关于软件」复制文本（`AboutWindow.xaml` / `AboutWindow.xaml.cs`）；② 三个工程的 `<Authors>`（该属性写入程序集 `CompanyName`，即 exe 文件属性里的「公司/作者」栏）；③ **211 个源文件的版权头注释**；④ 根目录 `NOTICE`；⑤ 中英 `README`、`CONTRIBUTING`、隐私政策文档。英文语境署名改用 `MSpirit`。`CHANGELOG` 中 1.2.2.0 的历史记录保留原名（历史事实不改写）。另注：`ImageViewer` 里的 `SlideShowMaxInterval` 含 “axIn” 子串，属大小写不敏感检索的误报，未改动。
+
+## [1.2.2.0] - 2026-10-16
+
+### 其他
+
+- **MSIX 包标识切换为 Partner Center 分配值（上架微软商店准备）**：清单 `Identity/@Name` 由测试期占位名 `MSpiritSafetySys` 改为 **`Spirit.31431668B8E26F`**、`Identity/@Publisher` 由 `CN=MSpirit` 改为 **`CN=6603A24B-BA4D-43EE-B004-2337E6B44574`**、`Properties/PublisherDisplayName` 由 `AXin` 改为 **`斜月 Spirit`**（三者均为 Partner Center「产品标识」页的原样值；官方口径：`@Name` 必须与预留名逐字符一致，`@Publisher` 必须与签名证书 Subject 逐字符一致）。`Properties/DisplayName` 与 `VisualElements/@DisplayName` 保持中文「斜月安全管理系统」不变（用户可见名）。打包脚本 `打包MSIX.ps1` 的 `$CertSubject` 同步改为新 Publisher（脚本检测到已有 `.pfx` 的 Subject 不一致时会**自动重新生成证书**，无需手工删除）。
+- **包族名（PFN）随之变更，旧测试包需卸载重装**：`MSpiritSafetySys_4df3rbx12d1x0` → `Spirit.31431668B8E26F_n4fgvp176crcr`（2026-10-16 装包实测值），AUMID 变为 `Spirit.31431668B8E26F_n4fgvp176crcr!App`。原 `shell:AppsFolder\MSpiritSafetySys_4df3rbx12d1x0!App` 一键启动命令随之失效——**稳妥写法仍是用显示名反查**：`$aumid = (Get-StartApps | Where-Object { $_.Name -eq '斜月安全管理系统' }).AppID; Start-Process "shell:AppsFolder\$aumid"`。新签名证书（Subject = `CN=6603A24B-BA4D-43EE-B004-2337E6B44574`）必须先导入**本地计算机级** `TrustedPeople`（用户级无效，见 `MSpirit.SafetySys.Package/README.md` 证书专节）。
+- **版本号 1.2.1.0 → 1.2.2.0**（csproj 三处 + 本文件 + `AboutWindow.xaml.cs` 三处同步）。除标记本轮发布工程变更外，另有一个工程目的：Windows 对「**同标识 + 同版本 + 内容不同**」的包直接拒绝部署（`0x80073CFB`），而清单 `Version` 第四段按商店要求必须为 0，故覆盖安装只能靠提升第 3 段 —— 提版本后即可直接覆盖安装，不必每次先卸载。更新日志条目另补记 `[1.2.1.0]` 遗漏的局域网离线判定提速（约 35 秒 → 约 12 秒，该变更实际随 1.2.1.0 发布，`AboutWindow` 此前未转译）。
+
+## [1.2.1.0] - 2026-10-15
+
+### 修复
+
+- **数据目录与日志文件位置调整（微软商店版上架准备）**：
+  - **数据目录（仅系统盘的单盘机器）**：无任何非系统盘时的兜底位置由 `%LOCALAPPDATA%\MSpirit.SafetySys.Date` 改为 `%USERPROFILE%\MSpirit.SafetySys.Date`。原因：MSIX（商店安装包）会把程序对 AppData 目录的新建写入重定向到包私有目录，**卸载软件时该目录被一并清空**——只有 C 盘的办公机会因此丢失全部隐患记录与人员档案。有 D/E 盘的机器数据本来就在非系统盘，不受影响。
+  - **老用户无感迁移**：记录文件一并移到 `%USERPROFILE%\MSpirit.SafetySys\DataRoot.txt`，启动时自动读取旧位置记录并迁移（旧位置无记录才回落到新位置逻辑），**不会误弹「数据目录丢失」恢复窗口，数据原地承接**。
+  - **日志文件**：由「程序安装目录旁的 `\logs\`」改为 `%USERPROFILE%\MSpirit.SafetySys\logs\`。MSIX 下安装目录只读，原位置日志会静默失效（出问题查不到日志）；新位置卸载后仍保留。日志目录不可写时程序降级为不落盘，**不会因日志问题导致无法启动**。
+  - 新增 `Services/AppPaths.cs` 统一收敛上述路径；`App.xaml.cs` 中两处重复的日志初始化合并为一处。
+  - 单元测试新增 15 例（旧记录回落、自动迁移、路径不落在 AppData 下的守护断言等）。
+- **局域网防火墙放行检测：修复「盘符联接」导致的假阴性（MSIX 包内每次都弹引导窗）**：当系统盘不是唯一安装位置时（Windows「新应用安装位置」设到别的盘），系统会把 MSIX 包实体放在 `D:\WindowsApps\<包全名>\`，只在 `C:\Program Files\WindowsApps\<包全名>` 留一个**目录联接**。于是系统按清单 `windows.firewallRules` 自建的放行规则里 `Program` 记的是 `D:` 路径，而进程自报的 `Environment.ProcessPath` 是 `C:` 路径 —— 原来的纯字符串比对必然不等，包内**每次**点「启动服务」都弹手动指引窗（防火墙其实早已放行，手机能连上，只是程序判断不出来）。新增纯函数 `ProgramPathEquals`（`LanFirewallService.cs`）做三级判定：① 原样比对 → ② 路径规范化后比对（统一分隔符、去尾随分隔符）→ ③ **仅在包内运行时**：规则路径的父目录名等于当前包全名且文件名相同。第 ③ 级刻意门控在包内，确保**非打包形态（绿色版/开发实例）行为完全不变**，同时避免把绿色版的遗留放行规则误判成"包内已放行"。新增 `TryGetPackageFullName`（复用既有 `GetCurrentPackageFullName` P/Invoke，不引新依赖）。单元测试新增 15 例（含"盘符联接包内命中"与三个守护用例：非包内不命中、包内但父目录非本包全名不命中、不同目录同名 exe 不命中），全仓 **748 例通过**。
+- **局域网「已连接设备」离线判定提速（原约 35 秒 → 约 12 秒）**：手机端心跳改为**仅在页面可见时上报**（判 `document.visibilityState`，并在 `visibilitychange` 回到前台时立即补发一次），切后台/锁屏即停止上报；心跳超时由 30 秒收紧到 **10 秒**、窗口巡检间隔由 5 秒收紧到 **2 秒**。超时值收敛为 `LanDeviceTracker.DefaultTimeout` 单点定义，三个 LAN 窗口改用无参构造（原先各自硬编码一份 `30s`/`5s`）。原实现在页面被浏览器后台节流续跑时设备数会**永不归零**（"假在线"）；关标签页仍由 `/bye` 即时移除，行为不变。取 10 秒的依据：手机端 3 秒一次心跳 → 容忍 3 次连续丢失，足够抗 Wi-Fi 抖动。单元测试新增 2 例（无参构造采用默认超时、超时值落在"抗抖动 vs 响应速度"区间）。
+
+### 其他
+
+- **开源准备（文档与合规）**：补全第三方组件许可清单（漏记的 `MetadataExtractor 2.8.1`；`Hardcodet.NotifyIcon.Wpf` 依据官方仓库更正为 MIT）；中英 README 补界面截图（10 张）与徽章、隐私政策链接；`LICENSE` 还原为官方 AGPL-3.0 原文（此前因额外抬头导致 GitHub 无法识别许可），署名声明移入新增的 `NOTICE`；README 新增「维护状态」声明（个人开发、更新不定期、欢迎 Issue、暂不接受外部 PR）；SECURITY / FAQ / CONTRIBUTING 同步开源口径。
+- **文档订正**：大文件行数清单按 2026-10-15 实测刷新（`MainWindow.xaml.cs` 已于 2026-08 拆分为 10 个分部类、主文件 398 行，移出清单）。
+- **清理 LAN 防火墙死代码**：删除 `LanFirewallService.TryAddRule()`（端口级放行 8000-8100 的旧实现，2026-08-16 改为「程序级放行」后全仓已无调用点）及仅供其使用的 `EndPort` 常量（端口区间语义统一由 `Common/LanPorts` 提供），同步精简对应单元测试。
+- **MSIX 商店版防火墙适配（R3）**：新增运行形态识别 `LanFirewallService.IsRunningPackaged()`（`GetCurrentPackageFullName` P/Invoke），并以纯函数 `DecideAction` 分派放行动作。**包内不再走 UAC 提权路径**——商店不批 `allowElevation`，且该能力语义是"允许应用**启动时**提权"（需配合 exe manifest 的 `requireAdministrator`），与本服务需要的"**运行中按需提权**"不是一回事，原路径在包内表现为"弹窗 → 用户点按钮 → 毫无反应"（比直接说不支持更误导）；现改为手动指引窗（「打开防火墙设置」/「重新检测」/「复制命令」），文案**先让用户用手机试连**——清单规则可能已生效、只是 `Program` 字段逐字符比对未命中（假阴性）。**非打包形态（开发调试、未来商店外分发）行为完全不变**（原路径原样抽为 `EnsureFirewallAccessByElevation`）。三个 LAN 录入窗口在包内不再叠加"等 Windows 原生弹窗"的 Toast，避免与手动指引窗自相矛盾。**新增 12 例单元测试**（`DecideAction` 7 / `IsRunningPackaged` 1 / `TryForceManualPrompt` 4）；另加一个仅开发用的调试开关 `MS_SPIRIT_FORCE_MANUAL_PROMPT`（非空即生效，值 `block` 按阻止形态渲染）——本机已有放行规则时该窗口不会自然弹出，用它跳过检测直接弹窗以目视验证排版文案。
+- **MSIX 打包工程落地并完成首个可安装包**：新增 `MSpirit.SafetySys.Package/`（含 `AppxManifest.xml`、`打包MSIX.ps1`、`打包MSIX.bat`、`Assets/` 图标与 `README.md`）。**不依赖 Visual Studio 或已安装的 Windows SDK**——`makeappx.exe` / `signtool.exe` 取自 NuGet 包 `Microsoft.Windows.SDK.BuildTools`。包标识由 `MoonSpiritX.MSpiritSafetySys` 缩短为 **`MSpiritSafetySys`**，签名者由 `CN=MoonSpiritX` 改为 **`CN=MSpirit`**；打包脚本新增两项守卫：已有证书 Subject 与当前签名者不一致时自动重新生成（防"改了签名者却沿用旧 .pfx"）、清单 `Identity/@Publisher` 与证书 Subject 逐字符一致性校验。`MSpirit.SafetySys.Package/README.md` 记录完整流程、证书信任要求（**必须装到「本地计算机」级的 `TrustedPeople`/`Root`，装到「当前用户」级无效**）、常见错误码与已知坑。
+- **MSIX 签名补齐 RFC3161 时间戳**：此前 `signtool sign` 只带 `/fd SHA256`，签名里没有时间信息（包属性页显示「时间戳：不可用」）。后果是官方明确的硬行为——**证书过期后该包无法再安装**（已安装的实例仍可继续运行，不受影响）。现打包脚本默认加盖时间戳（`/td SHA256 /tr http://timestamp.digicert.com`），TSA 不可达时自动回退为不带时间戳重签并在结尾把"本包无时间戳"明确打出来（不静默降级）；新增 `-NoTimestamp`（离线应急）与 `-TimestampServer <url>`（换源）两个参数；签名后从签名里读回时间戳状态写入汇总行。上架微软商店不受此影响（商店用自己的证书重新签名），受益的是自签分发与将来可能走国内平台的分发。
+  > 包名口径：2026-10-15 曾考虑把 `Identity/@Name` 再改成两段式占位名（`MSpirit.MSpiritSafetySys`）以贴近商店预留名的形态，**权衡后维持 `MSpiritSafetySys` 不变**——官方要求提交时的包名必须与 Partner Center **预留名逐字符一致**，而预留名只能预留后原样复制，任何自拟名都要在提交前替换；提前改只会白付一轮「卸载旧包 + 重导证书 + 重装」的验证成本。
+- 源代码仓库已于 2026-10-15 转为公开：<https://github.com/MoonSpiritX/MSpirit.SafetySys>（AGPL-3.0）。
+
+### 2026-10-16（MSIX 打包完善：桌面快捷方式 / 包体积裁剪 / 工程加固）
+
+- **MSIX 包新增桌面快捷方式（Win11 生效，Win10 按设计跳过）**：清单新增 `desktop7:Extension / windows.shortcut`（声明在 **`<Application>` 级**，与必须在 `<Package>` 级的 `firewallRules` 相反），装包时由系统在**当前用户桌面**创建「斜月安全管理系统.lnk」。官方 schema 标注该元素**最低 OS Build 19645**，而 Windows 10 最高只到 19045——若据此提高 `TargetDeviceFamily/@MinVersion` 等于**把所有 Win10 用户排除在外**，故**刻意保持 MinVersion = `10.0.17763.0` 不动**，并把 `desktop7` 写进 `IgnorableNamespaces`：Win10 忽略该扩展，结果是「**装得上、但没有桌面快捷方式**」（2026-10-16 明确的取舍）。另实测「从开始菜单『所有应用』拖到桌面」在 Win11 **拖不动、不生成快捷方式**，故未采用该备选路。
+- **裁剪卫星程序集，包体积小幅下降**：主工程新增 `<SatelliteResourceLanguages>zh-Hans;zh-Hant;en</SatelliteResourceLanguages>`，`cs` / `de` / `es` / `fr` / `it` / `ja` / `ko` / `pl` / `pt-BR` / `ru` / `tr` 共 11 种语言不再生成卫星程序集目录。MSIX 包 **261.5 MB → 256.4 MB**（−5.1 MB），包内语言目录 **14 个 → 2 个**（`zh-Hans` / `zh-Hant`；英文是中性资源，直接编进主程序集，没有独立目录）。作用域覆盖**全部**发布形态，绿色版同样受益。降幅有限的原因：卫星程序集本身很小，包体积大头是 .NET 运行时与 PaddleOCR / ONNX Runtime / OpenCV / SkiaSharp 的原生库。
+- **打包工程加固（口令外置 / 忽略规则兜底 / 路径去本地化）**：`打包MSIX.ps1` 新增证书口令三级解析（`-CertPassword` 参数 > 环境变量 `MSIX_CERT_PASSWORD` > 本地口令文件 `bin\MSIX.Cert\pfx.password`），并在「当前无现成证书」时自动生成随机口令并落盘（首次打包免手工配置）；`.gitignore` 补 `*.pfx` / `*.pvk` / `*.snk` / `*.password` 兜底规则；`MSpirit.SafetySys.Updater` 的发布配置 `FolderProfile.pubxml` 把本机绝对路径改为基于文件位置的相对路径（公开仓库不再暴露本地目录结构）。`MSpirit.SafetySys.Package/README.md` 同步新增「桌面快捷方式」「包体积与语言资源裁剪」两节与两条已知坑。**注**：脚本 `param()` 里的旧明文默认值尚未清空（会短路上述三级解析），清空方式见该 README 已知坑第 10 条。
+
 ## [1.2.0.0] - 2026-08-17
 
 > 本版合并 2026-08-14 ~ 08-17 的未发布内容（按日分段保留原分类）。

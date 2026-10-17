@@ -134,7 +134,15 @@ function checkServer() {
   });
 }
 checkServer();
-setInterval(checkServer, 3000);
+// 心跳只由"可见"的页面发送（2026-10-15）：手机切后台/锁屏时停止上报，服务端据此在 10 秒内判定设备离线。
+// 原先无条件发送时，页面在后台被浏览器节流续跑 → 设备数永不归零（"假在线"）。
+setInterval(function () {
+  if (document.visibilityState === 'visible') checkServer();
+}, 3000);
+// 切回前台立即补发一次，无需等下一个 3 秒周期（快速恢复计数与在线指示）
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible') checkServer();
+});
 
 // 页面关闭时通知服务端"设备离开"：服务端立即从"已连接设备"中移除（无需等心跳超时）。
 // sendBeacon 在页面卸载瞬间可靠送达；若失败（浏览器被强杀等），服务端仍有心跳超时兜底。

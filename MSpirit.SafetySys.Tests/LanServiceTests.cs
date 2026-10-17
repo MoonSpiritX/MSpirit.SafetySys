@@ -1,4 +1,4 @@
-// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 斜月Spirit
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // LanService（人员 LAN 录入 HTTP 服务）单元测试 —— 此前无测试（docs/LAN服务技术文档.md 已知缺口）。

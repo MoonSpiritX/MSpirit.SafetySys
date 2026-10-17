@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  斜月安全管理系统 · MSIX 包清单（AppxManifest.xml）
+
+  注意：这是 makeappx 直接消费的清单（VS 项目用的源文件名是 Package.appxmanifest，
+  两者内容等价、文件名不同；本项目不走 VS 打包工程，用脚本 + makeappx 打包）。
+
+  ✅ 上架微软商店的两处标识已替换为 Partner Center 分配值（2026-10-16）：
+    1. Identity/@Publisher = `CN=6603A24B-BA4D-43EE-B004-2337E6B44574`（PC「产品标识」页的
+       Package/Identity/Publisher），**必须与签名证书 Subject 逐字符一致**（含大小写与空格），
+       否则签名校验失败。打包脚本 `$CertSubject` 已同步为该值（脚本会自动重新生成证书）。
+    2. Identity/@Name = `Spirit.31431668B8E26F`（PC 预留名生成的应用标识，**不是**我自拟的
+       `MSpiritSafetySys`）。官方口径：@Name 必须与预留名逐字符一致，且**发布后不可更改**
+       （改 = 新应用、新 listing、无升级路径）。
+    ⇒ 本次替换改变了**包族名（PFN）**：`MSpiritSafetySys_4df3rbx12d1x0`
+       → `Spirit.31431668B8E26F_n4fgvp176crcr`（2026-10-16 装包实测值），
+       旧测试包必须卸载重装、新证书必须重导信任。
+    `Properties/DisplayName` / `VisualElements/@DisplayName` 保持中文「斜月安全管理系统」
+    （用户可见名），`Properties/PublisherDisplayName` = `斜月 Spirit`（须与 PC 一致）。
+
+  Identity/@Name 命名约束（2026-10-15 实测确认）：
+    只允许字母数字 + 句点 + 短划线，3~50 字符，不能以句点结尾，不能是 CON/NUL/COM1 等保留名。
+    故用全 ASCII 的 MSpiritSafetySys（17 字符），不能用中文。
+    2026-10-15 由 MoonSpiritX.MSpiritSafetySys 缩短而来（用户要求：包名别太长）。
+
+  Identity/@Version：四段均为 0~65535，且**第四段（Revision）必须为 0**（商店要求）。
+    2026-10-16 由 1.2.1.0 提到 1.2.2.0（主工程 csproj / CHANGELOG / AboutWindow 三处已同步）——
+    兼作「同标识同版本、内容不同必被拒（0x80073CFB）」的规避：不提第 3 段就只能先卸载再装。
+
+  Executable 指向**主程序** MSpirit.SafetySys.exe（不是 Launcher）：
+    Launcher「斜月安全管理系统.exe」的唯一职责是绿色版自更新，商店版不需要，
+    且它不监听 LAN 端口——防火墙规则绑它等于没绑。
+
+  已声明的两个扩展（注意声明层级**不同**，都对不上就报错）：
+    1. <Package> 级 —— desktop2:Extension / windows.firewallRules（LAN 入站放行）
+    2. <Application> 级 —— desktop7:Extension / windows.shortcut（桌面快捷方式，2026-10-16 加）
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  xmlns:desktop2="http://schemas.microsoft.com/appx/manifest/desktop/windows10/2"
+  xmlns:desktop7="http://schemas.microsoft.com/appx/manifest/desktop/windows10/7"
+  IgnorableNamespaces="uap rescap desktop2 desktop7">
+
+  <Identity
+    Name="Spirit.31431668B8E26F"
+    Publisher="CN=6603A24B-BA4D-43EE-B004-2337E6B44574"
+    Version="1.2.3.0"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>斜月安全管理系统</DisplayName>
+    <PublisherDisplayName>斜月 Spirit</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Applications>
+    <Application Id="App"
+                 Executable="MSpirit.SafetySys.exe"
+                 EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="斜月安全管理系统"
+        Description="面向实体行业企业安全管理员的本地桌面软件"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png" />
+
+      <!-- 桌面快捷方式（2026-10-16 新增，desktop7 schema）。
+           ⚠️ 必须声明在 <Application> 内（与 firewallRules 相反，后者要在 <Package> 级）。
+           File 只能落在系统提供的三个常量目录下：$(Desktop) / $(Programs) / $(Common Programs)；
+           此处用 $(Desktop) = 当前用户桌面（MSIX 按用户安装，每人装了自己桌面有一个，合理）。
+           快捷方式的**目标**由所在 <Application> 的 Executable 决定，无需在此重复声明。
+           Icon 为**必填**，指向包内文件；用主程序 exe（取其内嵌应用图标）——
+           .lnk 的图标位不支持直接引用 png，故不用 Assets\*.png。
+           显示名不单独声明（不引 desktop10:DisplayName，少一个命名空间），直接用文件名「斜月安全管理系统」。
+           ⚠️ Win10 兼容：官方 schema 标注本元素最低 OS Build 19645（Win10 上限 19045 < 19645）
+              → 故意**不**提高 TargetDeviceFamily/@MinVersion（仍是 10.0.17763.0），
+                而是把 desktop7 写进 IgnorableNamespaces：Win10 认不得该命名空间时**忽略**它，
+                结果是「装得上、但没有桌面快捷方式」（用户 2026-10-16 明确接受此取舍）。
+              → 若强行把 MinVersion 提到 19645 会直接排除全部 Windows 10 用户，不可取。 -->
+      <Extensions>
+        <desktop7:Extension Category="windows.shortcut">
+          <desktop7:Shortcut
+            File="$(Desktop)\斜月安全管理系统.lnk"
+            Icon="MSpirit.SafetySys.exe"
+            Description="面向实体行业企业安全管理员的本地桌面软件" />
+        </desktop7:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <!-- 防火墙入站放行：安装时由系统写入，替代包内的 netsh + UAC 提权（商店不批 allowElevation）。
+       ⚠️ 该扩展必须声明在 <Package> 级，**不能放进 <Application>** —— makeappx 报错原文：
+          「The "windows.firewallRules" extension should be declared under <Package> extensions.」
+          （2026-10-15 首次打包实测撞到）。
+       属性取自 desktop2:Rule 的 schema 必需项：Direction / IPProtocol / Profile。
+       Profile 必须写 all —— 代码 RuleTextCoversStartPort 要求规则覆盖**当前活动配置文件**，
+       国内家庭/办公网大量被判定为「公用」，写 private 等于白写（2026-10-15 结论）。
+       故意**不写端口**（= Any）：与包内 TryAddProgramAllowRule 的程序级放行语义一致（覆盖所有端口），
+       且以后改 LanPorts 无需重新打包送审。规则仍限「该 exe + TCP + 入站」，收敛面足够。 -->
+  <Extensions>
+    <desktop2:Extension Category="windows.firewallRules">
+      <desktop2:FirewallRules Executable="MSpirit.SafetySys.exe">
+        <desktop2:Rule Direction="in" IPProtocol="TCP" Profile="all" />
+      </desktop2:FirewallRules>
+    </desktop2:Extension>
+  </Extensions>
+
+  <Capabilities>
+    <!-- 全信任桌面应用必需（商店对此能力自动放行）。
+         注：privateNetworkClientServer / internetClientServer 对 FullTrust 进程**不产生实际约束**
+         （那是 AppContainer 的网络隔离范畴），故不声明——声明了也无用。 -->
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>

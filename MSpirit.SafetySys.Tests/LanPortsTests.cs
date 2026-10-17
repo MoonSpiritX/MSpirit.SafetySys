@@ -1,4 +1,4 @@
-// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 斜月Spirit
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // LanPorts 端口常量一致性守护：改 LanPorts.Start 后，探测范围 / 防火墙放行范围 /

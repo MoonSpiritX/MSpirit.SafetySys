@@ -50,7 +50,7 @@
 
         <!-- 全局标题栏 -->
         <controls:WindowTitleBar Grid.Row="0"
-                                 Icon="pack://application:,,,/Resources/FoolMoon.png"
+                                 Icon="pack://application:,,,/Resources/斜月安全管理系统图标256.png"
                                  Title="常用链接管理"
                                  ShowMinimizeButton="False"
                                  ShowMaximizeButton="False"/>

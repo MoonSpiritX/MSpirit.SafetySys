@@ -1,4 +1,4 @@
-// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 斜月Spirit
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // HazardLanService（隐患 LAN 录入）完整业务流测试（第 3 步：补业务流落库链路，docs/LAN服务技术文档.md 已知缺口）。

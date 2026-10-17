@@ -1,4 +1,4 @@
-// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 斜月Spirit
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using Serilog;
@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -34,9 +35,6 @@ namespace MS_SafetyManagementSystem.Services
 
         /// <summary>LAN 服务端口起点（引用 Common/LanPorts，改端口只改那一处）</summary>
         public const int StartPort = LanPorts.Start;
-
-        /// <summary>放行端口终点（引用 Common/LanPorts，探测上限留 1 位余量）</summary>
-        public const int EndPort = LanPorts.FirewallEnd;
 
         // ── netsh 输出解析（2026-08-16 修复 P0：标签与值均本地化，必须中英双匹配）──
         // netsh 的 verbose 字段标签/取值随控制台代码页变化：UTF-8 代码页（如 PowerShell/启用 UTF-8 系统）
@@ -168,19 +166,257 @@ namespace MS_SafetyManagementSystem.Services
         }
 
         /// <summary>
-        /// 确保本程序具备 Windows 防火墙入站放行（返回 true = 手机可访问；false = 未自动放行，不阻断启动）。
-        /// 流程（2026-08-16 重构为「程序级放行 + 原生弹窗」方案）：
+        /// 防火墙放行动作（纯函数 <see cref="DecideAction"/> 的输出，便于单元测试覆盖全部分支）。
+        /// </summary>
+        internal enum FirewallAction
+        {
+            /// <summary>已有放行规则（且无程序级阻止）→ 直接放行，零交互</summary>
+            Proceed,
+
+            /// <summary>非打包形态：弹引导窗 + 一键 UAC（2026-08-16 起的既有行为）</summary>
+            PromptAndElevate,
+
+            /// <summary>MSIX 包内（商店版）：只弹手动指引窗，**绝不提权**（包内无法自助提权，见 <see cref="IsRunningPackaged"/>）</summary>
+            PromptManualOnly,
+        }
+
+        /// <summary>
+        /// 是否运行在 MSIX 包内（具备包标识 = 商店安装版）。
+        /// 为什么必须区分：包内 `Process.Start(Verb="runas")` 不可用——商店不批 `allowElevation`，
+        /// 且该能力语义是"允许应用**在启动时**提权"（需配合 exe manifest 的 requireAdministrator），
+        /// 而本服务需要的是"**运行中按需提权**"，两者不是一回事。因此包内必须走"只提示 + 手动指引"
+        /// （规则本应由清单 `windows.firewallRules` 在安装时写好），否则表现为"弹窗 → 点按钮 → 毫无反应"。
+        ///
+        /// 判断失败一律按"非包内"处理（开发机、以及未来 EXE/MSI 分发形态都不受影响）。
+        /// 调试开关：环境变量 `MS_SPIRIT_FORCE_PACKAGED=1` 可强制按包内处理，供**未打包时**
+        /// 验证手动指引窗形态（仅开发用；正式逻辑不依赖它）。
+        /// </summary>
+        internal static bool IsRunningPackaged()
+        {
+            try
+            {
+                if (Environment.GetEnvironmentVariable("MS_SPIRIT_FORCE_PACKAGED") == "1") return true;
+
+                int length = 0;
+                // 无包标识时返回 APPMODEL_ERROR_NO_PACKAGE（15700）；成功返回 0。
+                return GetCurrentPackageFullName(ref length, null) != AppModelErrorNoPackage;
+            }
+            catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
+            {
+                // 理论上 Win10 17763+ 必有该导出，兜底保平安
+                Log.Debug("[Lan] GetCurrentPackageFullName 不可用（按非包内处理）：{Message}", ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>无包标识的返回码（APPMODEL_ERROR_NO_PACKAGE）</summary>
+        private const int AppModelErrorNoPackage = 15700;
+
+        /// <summary>缓冲区不足的返回码（ERROR_INSUFFICIENT_BUFFER，GetCurrentPackageFullName 首次探测用）</summary>
+        private const int ErrorInsufficientBuffer = 122;
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern int GetCurrentPackageFullName(ref int packageFullNameLength, StringBuilder? packageFullName);
+
+        /// <summary>
+        /// 取当前进程的**包全名**，形如 `Spirit.31431668B8E26F_1.2.2.0_x64__n4fgvp176crcr`
+        /// （结构为「包名_版本_架构__发布者哈希」；例句为 2026-10-16 实测值，
+        /// 改包名、改版本或换发布者都会变——哈希段由 Identity/@Name + Publisher 派生）。
+        /// 非包内运行、或调用失败时返回 false（<paramref name="packageFullName"/> 置空）。
+        ///
+        /// 用途：供 <see cref="ProgramPathEquals"/> 的第 ③ 级判定使用——包内运行时，系统按清单
+        /// 自建的防火墙规则里记录的 Program 路径可能是**另一个盘符写法**（见该方法注释）。
+        /// 与 <see cref="IsRunningPackaged"/> 共用同一个 P/Invoke，不引入新依赖。
+        /// </summary>
+        internal static bool TryGetPackageFullName(out string packageFullName)
+        {
+            packageFullName = "";
+            try
+            {
+                int length = 0;
+                // 首次传 null 只为取所需长度：包内返回 ERROR_INSUFFICIENT_BUFFER，非包内返回 NO_PACKAGE。
+                if (GetCurrentPackageFullName(ref length, null) != ErrorInsufficientBuffer || length <= 0) return false;
+
+                var sb = new StringBuilder(length);
+                if (GetCurrentPackageFullName(ref length, sb) != 0) return false;
+
+                packageFullName = sb.ToString();
+                return packageFullName.Length > 0;
+            }
+            catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
+            {
+                Log.Debug("[Lan] GetCurrentPackageFullName 不可用（按非包内处理）：{Message}", ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>包全名；非包内返回 null。供 netsh 规则比对直接透传（见 <see cref="ProgramPathEquals"/>）</summary>
+        private static string? GetPackageFullNameOrNull() =>
+            TryGetPackageFullName(out string fullName) ? fullName : null;
+
+        /// <summary>
+        /// 程序级规则里记录的 Program 路径是否指向本程序 exe（纯函数，可单测）。
+        /// 三级判定，全部忽略大小写：
+        ///  ① 原样相等——绝大多数情况，零成本；
+        ///  ② 规范化后相等（去首尾空白、`/`→`\`、折叠重复分隔符、去尾随分隔符）；
+        ///  ③ **仅在包内运行时**（<paramref name="packageFullName"/> 非空）：规则路径的
+        ///     **父目录名等于当前包全名**，且**文件名等于当前 exe 的文件名**。
+        ///
+        /// 为什么需要第 ③ 级（2026-10-15 实测，见 临时文档/R3-LAN防火墙MSIX适配方案.md §11.9）：
+        /// 系统盘不是唯一安装位置时，Windows 把包实体放在 `D:\WindowsApps\&lt;包全名&gt;\`，
+        /// 并在 `C:\Program Files\WindowsApps\&lt;包全名&gt;` 建**目录联接**。此时：
+        ///   - 系统按清单 `windows.firewallRules` 自建的规则里，Program 记的是 **`D:`** 路径；
+        ///   - 进程自报的 <see cref="GetAppExecutablePath"/>（= `Environment.ProcessPath`）是 **`C:`** 路径。
+        /// → 原样比对必然不等 → 检测假阴性 → 包内**每次**点「启动服务」都弹手动指引窗
+        ///   （防火墙其实早已放行，手机能连上，只是我们判断不出来）。
+        ///
+        /// 包全名含发布者哈希、全局唯一，故"父目录名 + 文件名"已足够特异；且**无需访问文件系统**
+        /// （`C:\Program Files\WindowsApps` 的 ACL 对非提权进程不友好，不适合走"解析重解析点"那条路）。
+        ///
+        /// 第 ③ 级只在包内启用，因此**非包内（绿色版 / 开发实例）行为完全不变**——也正因此不会把
+        /// 绿色版的遗留规则（父目录名形如 `Debug.SafetySys`）误判成"包内已放行"。
+        /// </summary>
+        internal static bool ProgramPathEquals(string? rulePath, string? exePath, string? packageFullName = null)
+        {
+            if (string.IsNullOrWhiteSpace(rulePath) || string.IsNullOrWhiteSpace(exePath)) return false;
+
+            // ① 原样
+            if (string.Equals(rulePath.Trim(), exePath.Trim(), StringComparison.OrdinalIgnoreCase)) return true;
+
+            // ② 规范化（写法差异：重复分隔符、正斜杠、尾随分隔符）
+            string rule = NormalizePathForCompare(rulePath);
+            string exe = NormalizePathForCompare(exePath);
+            if (string.Equals(rule, exe, StringComparison.OrdinalIgnoreCase)) return true;
+
+            // ③ 包内：同一包全名目录下的同名 exe（覆盖盘符联接导致的 C:/D: 差异）
+            if (string.IsNullOrWhiteSpace(packageFullName)) return false;
+
+            string ruleDir = GetParentDirectoryName(rule);
+            string ruleFile = GetFileNameOf(rule);
+            string exeFile = GetFileNameOf(exe);
+            if (ruleDir.Length == 0 || ruleFile.Length == 0 || exeFile.Length == 0) return false;
+
+            return string.Equals(ruleDir, packageFullName.Trim(), StringComparison.OrdinalIgnoreCase)
+                   && string.Equals(ruleFile, exeFile, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>路径规范化（仅供比对）：去首尾空白、`/`→`\`、折叠重复分隔符、去尾随分隔符</summary>
+        private static string NormalizePathForCompare(string path)
+        {
+            string p = path.Trim().Replace('/', '\\');
+            while (p.Contains(@"\\")) p = p.Replace(@"\\", @"\");
+            return p.TrimEnd('\\');
+        }
+
+        /// <summary>取路径的父目录名（如 `C:\A\B\c.exe` → `B`）；无父目录返回空串</summary>
+        private static string GetParentDirectoryName(string normalizedPath)
+        {
+            int lastSep = normalizedPath.LastIndexOf('\\');
+            if (lastSep <= 0) return "";
+            string parent = normalizedPath.Substring(0, lastSep);
+            int prevSep = parent.LastIndexOf('\\');
+            return prevSep >= 0 ? parent.Substring(prevSep + 1) : parent;
+        }
+
+        /// <summary>取路径的文件名（末段）；无分隔符则原样返回</summary>
+        private static string GetFileNameOf(string normalizedPath)
+        {
+            int lastSep = normalizedPath.LastIndexOf('\\');
+            return lastSep >= 0 ? normalizedPath.Substring(lastSep + 1) : normalizedPath;
+        }
+
+        /// <summary>
+        /// 调试开关：环境变量 `MS_SPIRIT_FORCE_MANUAL_PROMPT` 非空即强制走「手动指引」形态
+        /// （值为 `block` 时按"存在程序级阻止"渲染文案），供**未打包时**目视验证该窗口的排版/按钮/文案。
+        ///
+        /// 为什么必须有它：本机若已存在放行规则，<see cref="DecideAction"/> 会走 `Proceed`，窗口**根本不弹**；
+        /// 而"禁用规则"同样无效——检测逻辑（<see cref="TryGetProgramRulePath"/>、
+        /// <see cref="RuleTextCoversStartPort"/>）不解析 `Enabled` 字段，netsh 会把已禁用规则照样列出，仍判为已放行。
+        /// 因此只能绕过检测（不能靠改系统状态）。
+        ///
+        /// 仅开发用，正式逻辑不依赖（未设该变量时所有分支行为完全不变）。
+        /// </summary>
+        internal static bool TryForceManualPrompt(out bool programBlocked)
+        {
+            programBlocked = false;
+            string? value = Environment.GetEnvironmentVariable("MS_SPIRIT_FORCE_MANUAL_PROMPT");
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            programBlocked = value.Trim().Equals("block", StringComparison.OrdinalIgnoreCase);
+            return true;
+        }
+
+        /// <summary>
+        /// 依据"是否包内 / 是否有程序级阻止规则 / 是否已有放行规则"决定放行动作（纯函数，可单测）。
+        /// 注意：**程序级阻止规则优先**——存在时即使已有放行规则也须先解除阻止（2026-08-15 实测），
+        /// 因此 hasProgramBlock=true 时一律不做 Proceed 判定。
+        /// </summary>
+        internal static FirewallAction DecideAction(bool packaged, bool hasProgramBlock, bool hasAllow)
+        {
+            if (hasAllow && !hasProgramBlock) return FirewallAction.Proceed;
+            return packaged ? FirewallAction.PromptManualOnly : FirewallAction.PromptAndElevate;
+        }
+
+        /// <summary>
+        /// 确保本程序具备 Windows 防火墙入站放行（返回 true = 已确认放行；false = 未确认，不阻断启动）。
+        /// 流程（2026-08-16 重构为「程序级放行 + 原生弹窗」方案；2026-10-15 增补包内分支）：
         ///  0. **程序级阻止规则**（根因：防火墙弹窗点「取消」生成，优先于端口 Allow 规则，且会抑制原生弹窗）
         ///     → 引导用户 UAC 删除；
         ///  1. 已有放行（端口规则覆盖 Start，或程序级 Allow 规则）→ 直接可用；
         ///  2. 无任何放行规则 → 弹引导窗口：默认路径为**让 Windows 弹原生「是否允许此应用访问网络？」窗口**
         ///     （手机首个入站连接时自动弹出，用户点允许即生成程序级 Allow 规则，覆盖所有端口、改端口无需重设）；
         ///     另提供「立即放行」一键 UAC 写入程序级 Allow 规则（原生弹窗的确定性等价物）。
+        ///
+        /// 形态差异（2026-10-15，R3 方案，见 临时文档/R3-LAN防火墙MSIX适配方案.md）：
+        ///  - **非打包形态**（开发调试 / 未来 Windows 商店外的 EXE、MSI 分发）：走上面的 UAC 路径，行为不变；
+        ///  - **MSIX 包内**（商店版）：只弹手动指引窗（不提权），并提示"先用手机试连"——
+        ///    清单规则若已生效而检测仍未命中（Program 路径还有别的写法差异），直接引导用户改防火墙可能纯属多余。
+        ///    注：2026-10-15 已修掉最常见的假阴性来源——「盘符联接」导致规则记 `D:` 而进程自报 `C:`
+        ///    （见 <see cref="ProgramPathEquals"/> 第 ③ 级）；「先试再连」文案保留作最后兜底。
+        ///    包内不出现"点了没反应"的路径。
+        ///
+        /// 调试：环境变量 `MS_SPIRIT_FORCE_MANUAL_PROMPT`（非空即生效，值为 `block` 时按阻止形态渲染）
+        /// 可强制走手动指引窗，绕过全部检测，供**未打包时**目视验证该窗口（见 <see cref="TryForceManualPrompt"/>）。
         /// </summary>
         public static bool EnsureFirewallAccess(Window? owner)
         {
+            // 0) 调试开关（仅开发用）：强制走手动指引形态，绕过全部检测。
+            //    命中即返回，下面的 netsh 扫描一次都不跑——也因此不受"本机已有放行规则"干扰。
+            if (TryForceManualPrompt(out bool forceBlocked))
+            {
+                Log.Warning("[Lan] 调试开关 MS_SPIRIT_FORCE_MANUAL_PROMPT 生效：强制手动指引窗（阻止形态={Block}），不检测、不提权",
+                    forceBlocked);
+                return new Views.LanFirewallPromptWindow(owner, programBlocked: forceBlocked, manualOnly: true)
+                    .ShowDialog() == true;
+            }
+
+            bool hasProgramBlock = HasProgramBlockRule();
+            // 程序级阻止存在时"是否已放行"不影响决策（任何形态都要先解除阻止）→ && 短路省下两次 netsh 扫描
+            bool hasAllow = !hasProgramBlock && (HasAllowRule() || HasProgramAllowRule());
+
+            switch (DecideAction(IsRunningPackaged(), hasProgramBlock, hasAllow))
+            {
+                case FirewallAction.Proceed:
+                    Log.Debug("[Lan] 已存在放行规则，跳过引导");
+                    return true;
+
+                case FirewallAction.PromptManualOnly:
+                    Log.Information("[Lan] MSIX 包内未检测到放行规则（程序级阻止={Block}）：改为手动指引，不提权", hasProgramBlock);
+                    return new Views.LanFirewallPromptWindow(owner, programBlocked: hasProgramBlock, manualOnly: true)
+                        .ShowDialog() == true;
+
+                default:
+                    return EnsureFirewallAccessByElevation(owner, hasProgramBlock);
+            }
+        }
+
+        /// <summary>
+        /// 非打包形态的既有路径：弹引导窗 + 一键 UAC 提权（写程序级放行 / 删程序级阻止）。
+        /// 2026-10-15 从 <see cref="EnsureFirewallAccess"/> 原样抽出，行为未变。
+        /// </summary>
+        private static bool EnsureFirewallAccessByElevation(Window? owner, bool hasProgramBlock)
+        {
             // 0) 程序级阻止规则（根因：防火墙弹窗点「取消」生成，优先于端口 Allow 规则）→ 需删除
-            if (HasProgramBlockRule())
+            if (hasProgramBlock)
             {
                 Log.Warning("[Lan] 检测到本程序的程序级防火墙阻止规则，需删除后才能被手机访问");
                 var blockPrompt = new Views.LanFirewallPromptWindow(owner, programBlocked: true);
@@ -194,16 +430,15 @@ namespace MS_SafetyManagementSystem.Services
                     Log.Warning("[Lan] 删除程序级阻止规则失败（UAC 取消或 netsh 失败），LAN 仍不可用");
                     return false;
                 }
+                // 解除阻止后若本就有放行规则（端口级或程序级），此处即可判定可用
+                if (HasAllowRule() || HasProgramAllowRule())
+                {
+                    Log.Debug("[Lan] 解除阻止后检测到已有放行规则，跳过引导");
+                    return true;
+                }
             }
 
-            // 1) 已有放行（端口规则覆盖 Start，或程序级 Allow 规则）→ 直接可用
-            if (HasAllowRule() || HasProgramAllowRule())
-            {
-                Log.Debug("[Lan] 已存在放行规则，跳过引导");
-                return true;
-            }
-
-            // 2) 无任何放行规则 → 引导原生弹窗 / 一键程序级放行
+            // 1) 无任何放行规则 → 引导原生弹窗 / 一键程序级放行
             //    注意：不预写端口规则——一旦写入规则，Windows 的原生弹窗就不会出现。
             var prompt = new Views.LanFirewallPromptWindow(owner);
             if (prompt.ShowDialog() == true && TryAddProgramAllowRule())
@@ -241,65 +476,13 @@ namespace MS_SafetyManagementSystem.Services
                 // 若在 per-block 里调用 = 350 块 × 每块一次进程 → 分钟级卡顿，2026-08-16 修复）。
                 string? currentProfile = GetCurrentFirewallProfile();
                 var blocks = SplitRuleBlocks(output);
-                bool hit = blocks.Any(b => RuleTextCoversStartPort(b, GetAppExecutablePath(), currentProfile));
+                bool hit = blocks.Any(b => RuleTextCoversStartPort(b, GetAppExecutablePath(), currentProfile, GetPackageFullNameOrNull()));
                 Log.Debug("[Lan] 全量扫描：块数={Blocks} 命中={Hit}（StartPort={Start}）", blocks.Length, hit, StartPort);
                 return hit;
             }
             catch (Exception ex)
             {
                 Log.Warning(ex, "[Lan] 检测防火墙放行规则失败（按未放行处理，将引导用户放行）");
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// UAC 提权执行 netsh 添加放行规则。返回 true 表示添加成功（或检测到规则已存在）。
-        /// 用户取消 UAC（Win32Exception）返回 false。
-        /// </summary>
-        public static bool TryAddRule()
-        {
-            // 二次确认：若规则实际已存在（可能首次检测失败），跳过添加避免累积重复规则
-            if (HasAllowRule())
-            {
-                Log.Debug("[Lan] 添加前检测到规则已存在，跳过");
-                return true;
-            }
-
-            try
-            {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "netsh",
-                    Arguments = $"advfirewall firewall add rule name=\"{RuleName}\" dir=in action=allow protocol=TCP localport={StartPort}-{EndPort}",
-                    Verb = "runas",          // 触发 UAC 提权
-                    UseShellExecute = true,  // runas 需要 UseShellExecute
-                    CreateNoWindow = true,
-                };
-                using var p = Process.Start(psi);
-                if (p == null)
-                {
-                    Log.Warning("[Lan] 无法启动 netsh 添加规则");
-                    return false;
-                }
-                if (!p.WaitForExit(30000))
-                {
-                    try { p.Kill(); } catch { /* 结束失败可忽略 */ }
-                    Log.Warning("[Lan] 添加规则超时");
-                    return false;
-                }
-                bool ok = p.ExitCode == 0;
-                Log.Information("[Lan] 防火墙放行规则添加结果：{Ok}（端口 {Start}-{End}）", ok, StartPort, EndPort);
-                return ok;
-            }
-            catch (System.ComponentModel.Win32Exception)
-            {
-                // 用户点击 UAC「否」/ 取消
-                Log.Information("[Lan] 用户取消 UAC，未放行防火墙");
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "[Lan] 添加防火墙放行规则失败");
                 return false;
             }
         }
@@ -341,9 +524,10 @@ namespace MS_SafetyManagementSystem.Services
                 }
                 var blocks = SplitRuleBlocks(output);
                 var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                string? packageFullName = GetPackageFullNameOrNull();
                 foreach (var b in blocks)
                 {
-                    if (TryGetProgramRulePath(b, exe, requiredAction, out string? path))
+                    if (TryGetProgramRulePath(b, exe, requiredAction, out string? path, packageFullName))
                         paths.Add(path);
                 }
                 result = paths.ToList();
@@ -488,15 +672,18 @@ namespace MS_SafetyManagementSystem.Services
         }
 
         /// <summary>解析入站程序级 Block 规则（见 <see cref="TryGetProgramRulePath"/>）</summary>
-        internal static bool TryGetProgramBlockPath(string ruleBlock, string exePath, out string? programPath) =>
-            TryGetProgramRulePath(ruleBlock, exePath, "Block", out programPath);
+        internal static bool TryGetProgramBlockPath(string ruleBlock, string exePath, out string? programPath, string? packageFullName = null) =>
+            TryGetProgramRulePath(ruleBlock, exePath, "Block", out programPath, packageFullName);
 
         /// <summary>
         /// 解析一条 netsh 规则文本：若为针对指定程序路径的入站规则且 Action 为 requiredAction
-        /// （Program 行与 exePath 忽略大小写一致、Direction=In），输出规则中记录的 Program 路径（原文）。
+        /// （Program 行与 exePath 指向同一 exe、Direction=In），输出规则中记录的 Program 路径（原文）。
         /// 字段标签与取值支持中英双语言。纯函数，可单测。
+        ///
+        /// 路径比对走 <see cref="ProgramPathEquals"/>（三级判定，第 ③ 级需 <paramref name="packageFullName"/> 非空），
+        /// 以覆盖 MSIX 盘符联接导致的 C:/D: 写法差异——**不解析重解析点**本身。
         /// </summary>
-        internal static bool TryGetProgramRulePath(string ruleBlock, string exePath, string requiredAction, out string? programPath)
+        internal static bool TryGetProgramRulePath(string ruleBlock, string exePath, string requiredAction, out string? programPath, string? packageFullName = null)
         {
             programPath = null;
             if (string.IsNullOrWhiteSpace(ruleBlock) || string.IsNullOrWhiteSpace(exePath)) return false;
@@ -510,7 +697,7 @@ namespace MS_SafetyManagementSystem.Services
 
             string path = program.Groups[1].Value.Trim();
             if (path.Length == 0) return false;
-            if (!string.Equals(path, exePath.Trim(), StringComparison.OrdinalIgnoreCase)) return false;
+            if (!ProgramPathEquals(path, exePath, packageFullName)) return false;
 
             programPath = path;
             return true;
@@ -528,8 +715,9 @@ namespace MS_SafetyManagementSystem.Services
         /// 无 Program 行的端口级规则（如历史「斜月安全管理系统-LAN」5000-5100）对所有程序生效，直接判定。
         /// 注意：本方法**不**查询当前配置文件（查询需 spawn netsh monitor，代价高）——
         /// currentProfile 由调用方查好传入（HasAllowRule 每轮扫描只查一次）。
+        /// <paramref name="packageFullName"/> 透传给 <see cref="ProgramPathEquals"/>（包内覆盖盘符联接差异）。
         /// </summary>
-        internal static bool RuleTextCoversStartPort(string ruleBlock, string appExePath, string? currentProfile)
+        internal static bool RuleTextCoversStartPort(string ruleBlock, string appExePath, string? currentProfile, string? packageFullName = null)
         {
             if (string.IsNullOrWhiteSpace(ruleBlock)) return false;
 
@@ -546,7 +734,7 @@ namespace MS_SafetyManagementSystem.Services
             {
                 string p = program.Groups[1].Value.Trim();
                 if (p.Length == 0 || string.IsNullOrWhiteSpace(appExePath)) return false;
-                if (!string.Equals(p, appExePath.Trim(), StringComparison.OrdinalIgnoreCase)) return false;
+                if (!ProgramPathEquals(p, appExePath, packageFullName)) return false;
             }
 
             // 规则必须适用于当前活动配置文件（域/专用/公用）

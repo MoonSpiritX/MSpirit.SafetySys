@@ -1,4 +1,4 @@
-// Copyright (C) 2026 AXin（斜月Spirit）
+// Copyright (C) 2026 斜月Spirit
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // LanDeviceTracker（三个 LAN 窗口共用"已连接设备"跟踪）单元测试：
@@ -112,6 +112,25 @@ namespace MSpirit.SafetySys.Tests
             t.Reset();
             Assert.Equal(0, t.Count);
             Assert.False(t.Sweep(new DateTime(2026, 8, 16, 10, 0, 5)));
+        }
+
+        [Fact]
+        public void 无参构造_采用DefaultTimeout()
+        {
+            // 守护：三个 LAN 窗口用无参构造，超时值单点定义在 LanDeviceTracker.DefaultTimeout，
+            // 不再散落三处（2026-10-15 收敛）。
+            Assert.Equal(LanDeviceTracker.DefaultTimeout, new LanDeviceTracker().Timeout);
+        }
+
+        [Fact]
+        public void DefaultTimeout_落在抗抖动与响应速度的平衡区间()
+        {
+            // 手机端每 3 秒 ping 一次（Resources/*_page.html）→ 超时须 > 3× 间隔才能容忍连续丢失（抗 Wi-Fi 抖动）；
+            // 同时不宜过大，否则"切后台"的用户要干等（原 30 秒即因此收紧）。
+            Assert.True(LanDeviceTracker.DefaultTimeout > TimeSpan.FromSeconds(9),
+                $"心跳超时 {LanDeviceTracker.DefaultTimeout.TotalSeconds}s 过短，无法容忍 3 次连续丢包");
+            Assert.True(LanDeviceTracker.DefaultTimeout <= TimeSpan.FromSeconds(15),
+                $"心跳超时 {LanDeviceTracker.DefaultTimeout.TotalSeconds}s 过长，设备离线反馈太慢");
         }
 
         [Fact]

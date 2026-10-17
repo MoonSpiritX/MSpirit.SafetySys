@@ -78,7 +78,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <controls:WindowTitleBar Grid.Row="0" Icon="pack://application:,,,/Resources/FoolMoon.png"
+        <controls:WindowTitleBar Grid.Row="0" Icon="pack://application:,,,/Resources/斜月安全管理系统图标256.png"
                                  Title="手机图片传输" ShowMinimizeButton="True" ShowMaximizeButton="True"/>
 
         <!-- 左右布局：左侧位置列表 / 右侧说明 + 文件列表 + 二维码 -->

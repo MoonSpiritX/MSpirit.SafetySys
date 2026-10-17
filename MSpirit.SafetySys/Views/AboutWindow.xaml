@@ -62,7 +62,7 @@
         </Grid.RowDefinitions>
 
         <controls:WindowTitleBar Grid.Row="0"
-                                 Icon="pack://application:,,,/Resources/FoolMoon.png"
+                                 Icon="pack://application:,,,/Resources/斜月安全管理系统图标256.png"
                                  Title="关于软件"
                                  ShowMinimizeButton="False"
                                  ShowMaximizeButton="False"/>
@@ -143,10 +143,10 @@
                                        Text="一、作者"/>
 
                             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                <TextBlock Text="  · 笔名：斜月Spirit（AXin）" FontSize="11pt" Foreground="#1A1A1A"
+                                <TextBlock Text="  · 笔名：斜月Spirit" FontSize="11pt" Foreground="#1A1A1A"
                                            VerticalAlignment="Center"/>
                                 <Button Style="{StaticResource CopyButtonStyle}" ToolTip="复制到剪贴板"
-                                        Click="CopyText_Click" Tag="斜月Spirit（AXin）">
+                                        Click="CopyText_Click" Tag="斜月Spirit">
                                     <TextBlock Style="{StaticResource CopyIconStyle}"/>
                                 </Button>
                             </StackPanel>
